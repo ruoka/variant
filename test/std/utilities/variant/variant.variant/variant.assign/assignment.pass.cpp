@@ -1,5 +1,6 @@
 #include<variant>
 #include<string>
+#include<iostream>
 
 void test_copy_assign()
 {

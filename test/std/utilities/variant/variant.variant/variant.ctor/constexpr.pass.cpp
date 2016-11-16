@@ -16,7 +16,7 @@ void test_all()
     variant v1{};
     variant v2{true};
     variant v3{v2};
-    // variant v4{variant{2.2}}; // FIXME
+    // variant v4{variant{2.2}};
     variant v5{std::in_place<int>, 13};
 
     std::allocator<char> a;
@@ -29,7 +29,7 @@ void test_all()
 
     variant v9{std::in_place<3>, {1,2,3,4,5,6,7}};
 
-    using variant2 = std::variant<bool,int,double,std::array<int,7>>;
+    // using variant2 = std::variant<bool,int,double,std::array<int,7>>;
     // variant2 v10{std::in_place<std::array<int,7>>, {1,2,3,4,5,6,7}}; // FIXME
     // variant2 v10{std::allocator_arg_t{}, a, std::in_place<3>, {1,2,3,4,5,6,7}}; // FIXME
 }

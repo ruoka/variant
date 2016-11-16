@@ -56,10 +56,10 @@ int main()
 {
     using variant = std::variant<bool,int,double,std::string>;
 
-    std::cout << std::__helper::__index_v<bool,bool,int,double,std::string> << std::endl;
-    std::cout << std::variant_size_v<variant> << std::endl;
-    std::variant_alternative_t<3,variant> str = "abc";
-    std::cout << str << std::endl;
+    // std::cout << std::__helper::__index_v<bool,bool,int,double,std::string> << std::endl;
+    // std::cout << std::variant_size_v<variant> << std::endl;
+    // std::variant_alternative_t<3,variant> str = "abc";
+    // std::cout << str << std::endl;
 
     variant v1{2.0};
     std::cout << v1.index() << std::endl;

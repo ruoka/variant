@@ -40,30 +40,6 @@ namespace std {
 
     constexpr size_t variant_npos = -1;
 
-    // helper templates
-
-    namespace __helper {
-
-        template <class... Types>
-        class __variant_base;
-
-        template <class T, class... Types>
-        struct __index; // undefined
-
-        template <class T>
-        struct __index<T> : integral_constant<size_t, 1> {};
-
-        template <class T, class... Types>
-        struct __index<T, T, Types...> : integral_constant<size_t, 0> {};
-
-        template <class T, class U, class... Types>
-        struct __index<T, U, Types...> : integral_constant<size_t, 1 + __index<T, Types...>::value> {};
-
-        template <class T, class... Types>
-        constexpr size_t __index_v = __index<T, Types...>::value;
-
-    } // namespace __helper
-
     // 20.7.10, class bad_variant_access
     class bad_variant_access : logic_error {
     public:
@@ -305,9 +281,6 @@ namespace std {
         lhs.swap(rhs);
     };
 
-    // 20.7.11, hash support
-    // template <class T> struct hash;
-
     namespace __helper {
 
         template <class... Types>
@@ -327,6 +300,9 @@ namespace std {
         }
 
     } // namespace __helper
+
+    // 20.7.11, hash support
+    // template <class T> struct hash;
 
     template <class... Types>
     struct hash<variant<Types...>>
@@ -375,451 +351,283 @@ namespace std {
             return { __swap<I, Types...> ... };
         }
 
-        template <class... Types>
-        using __constructor_function_type = void(*)(__variant_base<Types...>&, const __variant_base<Types...>&);
-
-        template <size_t I, class... Types>
-        constexpr void __construct(__variant_base<Types...>& v, const __variant_base<Types...>& w) noexcept
-        {
-            using T = variant_alternative_t<I,variant<Types...>>;
-            v.template __construct<T>(get<T>(w));
-        }
-
-        template <class... Types, size_t... I>
-        constexpr array<__constructor_function_type<Types...>, sizeof...(I)> __make_construct_array(index_sequence<I...>)
-        {
-            return { __construct<I, Types...> ... };
-        }
-
-        template <class Alloc, class... Types>
-        using __allocator_function_type = void(*)(allocator_arg_t, Alloc, __variant_base<Types...>&, const __variant_base<Types...>&);
-
-        template <size_t I, class Alloc, class... Types>
-        constexpr void __construct(allocator_arg_t, Alloc a, __variant_base<Types...>& v, const __variant_base<Types...>& w) noexcept
-        {
-            using T = variant_alternative_t<I,variant<Types...>>;
-            // v.template __construct<T>(allocator_arg_t{}, a, get<T>(w));
-            v.template __construct<T, Alloc>(allocator_arg_t{}, a, get<T>(w));
-        }
-
-        template <class Alloc, class... Types, size_t... I>
-        constexpr array<__allocator_function_type<Alloc, Types...>, sizeof...(I)> __make_allocator_construct_array(index_sequence<I...>)
-        {
-            return { __construct<I, Alloc, Types...> ... };
-        }
-
-        template <class... Types>
-        using __member_function_type = void(*)(__variant_base<Types...>&);
-
-        template <size_t I, class... Types>
-        constexpr void __destroy(__variant_base<Types...>& v) noexcept
-        {
-            using T = variant_alternative_t<I,variant<Types...>>;
-            v.template __destroy<T>();
-        }
-
-        template <class... Types, size_t... I>
-        constexpr array<__member_function_type<Types...>, sizeof...(I)> __make_destroy_array(index_sequence<I...>)
-        {
-            return { __destroy<I, Types...> ... };
-        }
-
-        template <class... Types>
-        class __variant_base {
-
-            using __T0 = variant_alternative_t<0,variant<Types...>>;
-
-        public:
-
-            __storage<Types...> m_storage;
-
-            // 20.7.2.1, constructors
-            constexpr __variant_base() noexcept(is_nothrow_default_constructible_v<__T0>) :
-                m_storage{in_place<__T0>},
-                m_index{0}
-            {
-                static_assert(is_default_constructible_v<__T0>,
-                    "This function shall not participate in overload resolution unless is_default_constructible_v<T0> is true.");
-            };
-
-            __variant_base(const variant<Types...>& v) :
-                m_storage{},
-                m_index{v.index()}
-            {
-                static_assert(conjunction_v<is_copy_constructible<Types> ...>,
-                    "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
-                __construct(v);
-            };
-
-            __variant_base(variant<Types...>&& v) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...>) :
-                m_storage{},
-                m_index{v.index()}
-            {
-                static_assert(conjunction_v<is_move_constructible<Types> ...>,
-                    "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
-                __construct(forward<variant<Types...>>(v));
-            };
-
-            template <class T,
-                      enable_if_t<conjunction_v<
-                                 negation< is_same< decay_t<T> , variant<Types...> > >,
-                                 is_constructible< T , T >
-                                 >,
-                                 bool> = true
-                      >
-            constexpr __variant_base(T&& t) noexcept(conjunction_v<is_nothrow_constructible<Types> ...>) :
-                m_storage{in_place<T>, forward<T>(t)},
-                m_index{__helper::__index_v<T, Types...>}
-            {
-                static_assert(conjunction_v<is_constructible<Types,Types> ...>,
-                    "This function shall not participate in overload resolution unless is_constructible_v<Ti> is true for all i.");
-            };
-
-            template <class T,
-                      class... Args,
-                      enable_if_t<is_constructible_v<T, Args...>, bool> = true
-                      >
-            constexpr explicit __variant_base(in_place_type_t<T>, Args&&... args) :
-                m_storage{in_place<T>, forward<Args>(args)...},
-                m_index{__helper::__index_v<T, Types...>}
-            {};
-
-            template <class T,
-                      class U,
-                      class... Args,
-                      enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
-                      >
-            constexpr explicit __variant_base(in_place_type_t<T>, initializer_list<U> il, Args&&... args) :
-                m_storage{in_place<T>, forward<initializer_list<U>>(il), forward<Args>(args)...},
-                m_index{__helper::__index_v<T, Types...>}
-            {};
-
-            template <size_t I,
-                      class... Args,
-                      class T = variant_alternative_t<I,variant<Types...>>,
-                      enable_if_t<is_constructible_v<T, Args...>, bool> = true
-                      >
-            constexpr explicit __variant_base(in_place_index_t<I>, Args&&... args) :
-                m_storage{in_place<T>, forward<Args>(args)...},
-                m_index{I}
-            {};
-
-            template <size_t I,
-                      class U,
-                      class... Args,
-                      class T = variant_alternative_t<I,variant<Types...>>,
-                      enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
-                      >
-            constexpr explicit __variant_base(in_place_index_t<I>, initializer_list<U> il, Args&&... args) :
-                m_storage{in_place<variant_alternative_t<I,variant<Types...>>>, forward<initializer_list<U>>(il), forward<Args>(args)...},
-                m_index{I}
-            {};
-
-            // allocator-extended constructors
-            template <class Alloc>
-            __variant_base(allocator_arg_t, const Alloc& a) :
-                m_storage{}
-            {
-                static_assert(is_default_constructible_v<__T0>,
-                    "This function shall not participate in overload resolution unless is_default_constructible_v<T0> is true.");
-                __construct<__T0>(allocator_arg_t{}, a);
-            };
-
-            template <class Alloc>
-            __variant_base(allocator_arg_t, const Alloc& a, const variant<Types...>& v) :
-                m_storage{},
-                m_index{v.index()}
-            {
-                static_assert(conjunction_v<is_copy_constructible<Types> ...>,
-                    "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
-                __construct(allocator_arg_t{}, a, v);
-            }
-
-            template <class Alloc>
-            __variant_base(allocator_arg_t, const Alloc& a, variant<Types...>&& v) :
-                m_storage{},
-                m_index{v.index()}
-            {
-                static_assert(conjunction_v<is_move_constructible<Types> ...>,
-                    "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
-                __construct(allocator_arg_t{}, a, forward<__variant_base>(v));
-            }
-
-            template <class Alloc,
-                      class T,
-                      enable_if_t<conjunction_v<
-                                 negation< is_same< decay_t<T> , variant<Types...> > >,
-                                 is_constructible< T , T >
-                                 >,
-                                 bool> = true
-                      >
-            __variant_base(allocator_arg_t, const Alloc& a, T&& t) :
-                m_storage{}
-            {
-                static_assert(conjunction_v<is_constructible<Types,Types> ...>,
-                    "This function shall not participate in overload resolution unless is_constructible_v<Ti> is true for all i.");
-                __construct<T>(allocator_arg_t{}, a, t);
-            };
-
-            template <class Alloc,
-                      class T,
-                      class... Args,
-                      enable_if_t<is_constructible_v<T, Args...>, bool> = true
-                      >
-            __variant_base(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
-                m_storage{}
-            {
-                __construct<T>(allocator_arg_t{}, a, forward<Args>(args) ...);
-            };
-
-            template <class Alloc,
-                      class T,
-                      class U,
-                      class... Args,
-                      enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
-                      >
-            __variant_base(allocator_arg_t, const Alloc& a, in_place_type_t<T>, initializer_list<U> il, Args&&... args) :
-                m_storage{}
-            {
-                __construct<T>(allocator_arg_t{}, a, forward<initializer_list<U>>(il), forward<Args>(args) ...);
-            };
-
-            template <class Alloc,
-                      size_t I,
-                      class... Args,
-                      class T = variant_alternative_t<I,variant<Types...>>,
-                      enable_if_t<is_constructible_v<T, Args...>, bool> = true
-                      >
-            __variant_base(allocator_arg_t, const Alloc& a, in_place_index_t<I>, Args&&... args) :
-                m_storage{}
-            {
-                __construct<T>(allocator_arg_t{}, a, forward<Args>(args) ...);
-            };
-
-            template <class Alloc,
-                      size_t I,
-                      class U,
-                      class... Args,
-                      class T = variant_alternative_t<I,variant<Types...>>,
-                      enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
-                      >
-            __variant_base(allocator_arg_t, const Alloc& a, in_place_index_t<I>, initializer_list<U> il, Args&&... args) :
-                m_storage{}
-            {
-                __construct<T>(allocator_arg_t{}, a, forward<initializer_list<U>>(il), forward<Args>(args) ...);
-            };
-
-            // 20.7.2.2, destructor
-            // ~__variant_base();
-
-            // 20.7.2.3, assignment
-            __variant_base& operator=(const variant<Types...>& rhs)
-            {
-                static_assert(conjunction_v<is_copy_constructible<Types> ...> &&
-                              conjunction_v<is_move_constructible<Types> ...> &&
-                              conjunction_v<is_copy_assignable   <Types> ...> ,
-                R"(This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> &&
-                                                                                     is_move_constructible_v<Ti> &&
-                                                                                     is_copy_assignable_v<Ti> is true for all i.)");
-                if(!valueless_by_exception())
-                    __destroy();
-                if(!rhs.valueless_by_exception())
-                    __construct(rhs);
-                return *this;
-            };
-
-            __variant_base& operator=(variant<Types...>&& rhs) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...> &&
-                                                                        conjunction_v<is_nothrow_move_assignable   <Types> ...>)
-            {
-                static_assert(conjunction_v<is_move_constructible<Types> ...> &&
-                              conjunction_v<is_move_assignable   <Types> ...> ,
-                R"(This function shall not participate in overload resolution unless is_move_constructible_- v<Ti> &&
-                                                                                     is_move_assignable_v<Ti> is true for all i.)");
-                if(!valueless_by_exception())
-                    __destroy();
-                if(!rhs.valueless_by_exception())
-                    swap(rhs);
-                return *this;
-            };
-
-            template <class T> __variant_base& operator=(T&& rhs) noexcept(conjunction_v<is_nothrow_assignable<Types&,Types>    ...>  &&
-                                                                           conjunction_v<is_nothrow_constructible<Types&,Types> ...>)
-            {
-                static_assert(is_same_v<decay_t<T>, variant> && is_assignable_v<T&, T> && is_constructible_v<T, T>,
-                R"(This function shall not participate in overload resolution unless is_same_v<decay_t<T>, variant> is false,
-                                                                              unless is_assignable_v<Tj&, T> && is_constructible_v<Tj, T> is true)");
-                if(!valueless_by_exception())
-                    __destroy();
-                __construct<T>(forward<T>(rhs));
-                return *this;
-            };
-
-            // 20.7.2.4, modifiers
-
-            template <class T, class... Args>
-            void emplace(Args&&... args)
-            {
-                if(!valueless_by_exception())
-                    __destroy();
-                __construct<T>(forward<Args>(args)...);
-            };
-
-            template <class T, class U, class... Args>
-            void emplace(initializer_list<U> il, Args&&... args)
-            {
-                if(!valueless_by_exception())
-                    __destroy();
-                __construct<T>(il, forward<Args>(args)...);
-            };
-
-            template <size_t I, class... Args>
-            void emplace(Args&&... args)
-            {
-                using T = variant_alternative_t<I,variant<Types...>>;
-                emplace<T>(forward<Args>(args)...);
-            };
-
-            template <size_t I, class U, class... Args>
-            void emplace(initializer_list<U> il, Args&&... args)
-            {
-                using T = variant_alternative_t<I,variant<Types...>>;
-                emplace<T>(il, forward<Args>(args)...);
-            };
-
-            // 20.7.2.5, value status
-            constexpr bool valueless_by_exception() const noexcept
-            {
-                return m_index == variant_npos;
-            }
-
-            constexpr size_t index() const noexcept
-            {
-                return m_index;
-            };
-
-            template <class T, class... Args>
-            void constexpr __construct(Args&&... args)
-            {
-                assert(valueless_by_exception());
-                new(&m_storage) remove_reference_t<T>{forward<Args>(args) ...};
-                m_index = __helper::__index_v<T, Types...>;
-            };
-
-            template <class T,
-                      class Alloc,
-                      class... Args,
-                      enable_if_t<!uses_allocator_v<decay_t<T>, Alloc>,bool> = true
-                      >
-            void __construct(allocator_arg_t, const Alloc& a, Args&&... args)
-            {
-                __construct<T>(forward<Args>(args)...);
-            };
-
-            template <class T,
-                      class Alloc,
-                      class... Args,
-                      enable_if_t<is_constructible_v<T, allocator_arg_t, Alloc, Args...>,bool> = true
-                      >
-            void __construct(allocator_arg_t, const Alloc& a, Args&&... args)
-            {
-                assert(valueless_by_exception());
-                new(&m_storage) remove_reference_t<T>{allocator_arg_t{}, a, forward<Args>(args)...};
-                m_index = __helper::__index_v<T, Types...>;
-            };
-
-            template <class T,
-                      class Alloc,
-                      class... Args,
-                      enable_if_t<is_constructible_v<T, Args..., Alloc>,bool> = true
-                      >
-            void __construct(allocator_arg_t, const Alloc& a, Args&&... args)
-            {
-                assert(valueless_by_exception());
-                new(&m_storage) remove_reference_t<T>{forward<Args>(args)..., a};
-                m_index = __helper::__index_v<T, Types...>;
-            };
-
-            // template <class T, class U, class... Args>
-            // void __construct(initializer_list<U> il, Args&&... args)
-            // {
-            //     assert(valueless_by_exception());
-            //     new(&m_storage) remove_reference_t<T>{il, forward<Args>(args)...};
-            //     m_index = __helper::__index_v<T, Types...>;
-            // };
-            //
-            // template <class T, class Alloc, class U, class... Args>
-            // void __construct(allocator_arg_t, const Alloc& a, initializer_list<U> il, Args&&... args)
-            // {
-            //     assert(valueless_by_exception());
-            //     new(&m_storage) remove_reference_t<T>{allocator_arg_t{}, a, forward(il), forward<Args>(args) ...};
-            //     m_index = __helper::__index_v<T, Types...>;
-            // };
-
-            template <class T>
-            void __destroy()
-            {
-                assert(!valueless_by_exception());
-                if(is_class_v<T>)
-                    reinterpret_cast<add_pointer_t<T>>(&m_storage)->~T();
-                m_index = variant_npos;
-            }
-
-        private:
-
-            void __construct(const __variant_base& v)
-            {
-                constexpr auto construct = __make_construct_array<Types...>(index_sequence_for<Types...>{});
-                construct[v.index()](*this, v);
-            }
-
-            template <class Alloc>
-            void __construct(allocator_arg_t, const Alloc& a, const __variant_base& v)
-            {
-                constexpr auto __array = __make_allocator_construct_array<Alloc, Types...>(index_sequence_for<Types...>{});
-                __array[v.index()](allocator_arg_t{}, a, *this, v);
-            }
-
-        protected:
-
-            void __destroy()
-            {
-                constexpr auto __array = __make_destroy_array<Types...>(index_sequence_for<Types...>{});
-                __array[m_index](*this);
-            }
-
-            size_t m_index = variant_npos;
-        };
-
-        template <class... Types>
-        struct __trivially_destructible : public __variant_base<Types...> {
-            using __base = __helper::__variant_base<Types...>;
-            using __base::__base;
-            ~__trivially_destructible() = default;
-        };
-
-        template <class... Types>
-        struct __non_trivially_destructible : public __variant_base<Types...> {
-            using __base = __helper::__variant_base<Types...>;
-            using __base::__base;
-            ~__non_trivially_destructible()
-            {
-                __base::__destroy();
-            }
-        };
-
     } // namespace __helper
 
     template <class... Types>
     class variant : public conditional_t<conjunction_v<is_trivially_destructible<Types>...>,
                                         __helper::__trivially_destructible<Types...>,
-                                        __helper::__non_trivially_destructible<Types...>>
+                                        __helper::__not_trivially_destructible<Types...>>
     {
         using __base = conditional_t<conjunction_v<is_trivially_destructible<Types>...>,
-                                  __helper::__trivially_destructible<Types...>,
-                                  __helper::__non_trivially_destructible<Types...>>;
-        public:
+                                            __helper::__trivially_destructible<Types...>,
+                                            __helper::__not_trivially_destructible<Types...>>;
 
-        using __base::__base;
+        using __base::__copy;
+
+        using __base::__move;
+
+        using __base::__construct;
+
+        using __base::__destroy;
+
+        using __base::m_index;
+
+    public:
+
+        // 20.7.2.1, constructors
+
+        template <class T0 = variant_alternative_t<0,variant>,
+                  enable_if_t<is_default_constructible_v<T0>, bool> = true>
+        constexpr variant() noexcept(is_nothrow_default_constructible_v<T0>) :
+            __base{in_place<T0>}
+        {
+            static_assert(is_default_constructible_v<T0>,
+                "This function shall not participate in overload resolution unless is_default_constructible_v<T0> is true.");
+        };
+
+        template <class T0 = variant_alternative_t<0,variant>,
+                  enable_if_t<!is_default_constructible_v<T0>, bool> = true>
+        constexpr variant() noexcept(is_nothrow_default_constructible_v<T0>) = delete;
+
+        variant(const variant& v) :
+            __base{v}
+        {
+            static_assert(conjunction_v<is_copy_constructible<Types> ...>,
+                "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
+            // __copy(v);
+        };
+
+        variant(variant&& v) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...>) :
+            __base{forward<variant>(v)}
+        {
+            static_assert(conjunction_v<is_move_constructible<Types> ...>,
+                "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
+            // __move(v);
+        };
+
+        template <class T,
+                  enable_if_t<!is_same_v<decay_t<T>,variant> && is_constructible_v<T,T>,bool> = true
+                  >
+        constexpr variant(T&& t) noexcept(conjunction_v<is_nothrow_constructible<Types> ...>) : // FIXME
+            __base{in_place<T>, forward<T>(t)}
+        {
+            static_assert(conjunction_v<is_constructible<Types,Types> ...>,
+                "This function shall not participate in overload resolution unless is_constructible_v<Ti> is true for all i.");
+        };
+
+        template <class T,
+                  class... Args,
+                  enable_if_t<is_constructible_v<T, Args...>, bool> = true
+                  >
+        constexpr explicit variant(in_place_type_t<T>, Args&&... args) :
+            __base{in_place<T>, forward<Args>(args)...}
+        {};
+
+        template <class T,
+                  class U,
+                  class... Args,
+                  enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
+                  >
+        constexpr explicit variant(in_place_type_t<T>, initializer_list<U> il, Args&&... args) :
+            __base{in_place<T>, forward<initializer_list<U>>(il), forward<Args>(args)...}
+        {};
+
+        template <size_t I,
+                  class... Args,
+                  class T = variant_alternative_t<I,variant>,
+                  enable_if_t<is_constructible_v<T, Args...>, bool> = true
+                  >
+        constexpr explicit variant(in_place_index_t<I>, Args&&... args) :
+            __base{in_place<T>, forward<Args>(args)...}
+        {};
+
+        template <size_t I,
+                  class U,
+                  class... Args,
+                  class T = variant_alternative_t<I,variant>,
+                  enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
+                  >
+        constexpr explicit variant(in_place_index_t<I>, initializer_list<U> il, Args&&... args) :
+            __base{in_place<variant_alternative_t<I,variant>>, forward<initializer_list<U>>(il), forward<Args>(args)...}
+        {};
+
+        // allocator-extended constructors
+        template <class Alloc,
+                  class T0 = variant_alternative_t<0,variant>,
+                  enable_if_t<is_default_constructible_v<T0>, bool> = true>
+        variant(allocator_arg_t, const Alloc& a) :
+            __base{allocator_arg_t{}, a, in_place<T0>}
+        {
+            static_assert(is_default_constructible_v<T0>,
+                "This function shall not participate in overload resolution unless is_default_constructible_v<T0> is true.");
+        };
+
+        template <class Alloc,
+                  class T0 = variant_alternative_t<0,variant>,
+                  enable_if_t<!is_default_constructible_v<T0>, bool> = true>
+        variant(allocator_arg_t, const Alloc& a) = delete;
+
+        template <class Alloc>
+        variant(allocator_arg_t, const Alloc& a, const variant& v) :
+            __base{allocator_arg_t{}, a, forward<variant>(v)}
+        {
+            static_assert(conjunction_v<is_copy_constructible<Types> ...>,
+                "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
+        }
+
+        template <class Alloc>
+        variant(allocator_arg_t, const Alloc& a, variant&& v) :
+            __base{allocator_arg_t{}, a, forward<variant>(v)}
+        {
+            static_assert(conjunction_v<is_move_constructible<Types> ...>,
+                "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
+        }
+
+        template <class Alloc,
+                  class T,
+                  enable_if_t<conjunction_v<
+                             negation< is_same< decay_t<T> , variant > >,
+                             is_constructible< T , T >
+                             >,
+                             bool> = true
+                  >
+        variant(allocator_arg_t, const Alloc& a, T&& t) : // FIXME
+            __base{allocator_arg_t{}, a, in_place<T>, forward<T>(t)}
+        {
+            static_assert(conjunction_v<is_constructible<Types,Types> ...>,
+                "This function shall not participate in overload resolution unless is_constructible_v<Ti> is true for all i.");
+        };
+
+        template <class Alloc,
+                  class T,
+                  class... Args,
+                  enable_if_t<is_constructible_v<T, Args...>, bool> = true
+                  >
+        variant(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
+            __base{allocator_arg_t{}, a, in_place<T>, forward<Args>(args) ...}
+        {};
+
+        template <class Alloc,
+                  class T,
+                  class U,
+                  class... Args,
+                  enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
+                  >
+        variant(allocator_arg_t, const Alloc& a, in_place_type_t<T>, initializer_list<U> il, Args&&... args) :
+            __base{allocator_arg_t{}, a, in_place<T>, forward<initializer_list<U>>(il), forward<Args>(args) ...}
+        {};
+
+        template <class Alloc,
+                  size_t I,
+                  class... Args,
+                  class T = variant_alternative_t<I,variant>,
+                  enable_if_t<is_constructible_v<T, Args...>, bool> = true
+                  >
+        variant(allocator_arg_t, const Alloc& a, in_place_index_t<I>, Args&&... args) :
+            __base{allocator_arg_t{}, a, in_place<T>, forward<Args>(args) ...}
+        {};
+
+        template <class Alloc,
+                  size_t I,
+                  class U,
+                  class... Args,
+                  class T = variant_alternative_t<I,variant>,
+                  enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
+                  >
+        variant(allocator_arg_t, const Alloc& a, in_place_index_t<I>, initializer_list<U> il, Args&&... args) :
+            __base{allocator_arg_t{}, a, in_place<T>, forward<initializer_list<U>>(il), forward<Args>(args) ...}
+        {};
+
+        // 20.7.2.2, destructor
+        ~variant() = default;
+
+        // 20.7.2.3, assignment
+        variant& operator=(const variant& rhs)
+        {
+            static_assert(conjunction_v<is_copy_constructible<Types> ...> &&
+                          conjunction_v<is_move_constructible<Types> ...> &&
+                          conjunction_v<is_copy_assignable   <Types> ...> ,
+            R"(This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> &&
+                                                                                 is_move_constructible_v<Ti> &&
+                                                                                 is_copy_assignable_v<Ti> is true for all i.)");
+            if(!valueless_by_exception())
+                __destroy();
+            if(!rhs.valueless_by_exception())
+                __copy(rhs);
+            return *this;
+        };
+
+        variant& operator=(variant&& rhs) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...> &&
+                                                                    conjunction_v<is_nothrow_move_assignable   <Types> ...>)
+        {
+            static_assert(conjunction_v<is_move_constructible<Types> ...> &&
+                          conjunction_v<is_move_assignable   <Types> ...> ,
+            R"(This function shall not participate in overload resolution unless is_move_constructible_- v<Ti> &&
+                                                                                 is_move_assignable_v<Ti> is true for all i.)");
+            if(!valueless_by_exception())
+                __destroy();
+            if(!rhs.valueless_by_exception())
+                __move(move(rhs));
+            return *this;
+        };
+
+        template <class T,
+                  enable_if_t<!is_same_v<decay_t<T>,variant>,bool> = true
+                  >
+        variant& operator=(T&& rhs) noexcept(conjunction_v<is_nothrow_assignable<Types&,Types>    ...>  &&
+                                                                       conjunction_v<is_nothrow_constructible<Types&,Types> ...>)
+        {
+            static_assert(!is_same_v<decay_t<T>, variant> && is_assignable_v<T&, T> && is_constructible_v<T, T>,
+            R"(This function shall not participate in overload resolution unless is_same_v<decay_t<T>, variant> is false,
+                                                                          unless is_assignable_v<Tj&, T> && is_constructible_v<Tj, T> is true)");
+            if(!valueless_by_exception())
+                __destroy();
+            __construct(in_place<T>, forward<T>(rhs));
+            return *this;
+        };
+
+        // 20.7.2.4, modifiers
+
+        template <class T, class... Args>
+        void emplace(Args&&... args)
+        {
+            if(!valueless_by_exception())
+                __destroy();
+            __construct(in_place<T>, forward<Args>(args)...);
+        };
+
+        template <class T, class U, class... Args>
+        void emplace(initializer_list<U> il, Args&&... args)
+        {
+            if(!valueless_by_exception())
+                __destroy();
+            __construct(in_place<T>, il, forward<Args>(args)...);
+        };
+
+        template <size_t I, class... Args>
+        void emplace(Args&&... args)
+        {
+            using T = variant_alternative_t<I,variant>;
+            emplace<T>(forward<Args>(args)...);
+        };
+
+        template <size_t I, class U, class... Args>
+        void emplace(initializer_list<U> il, Args&&... args)
+        {
+            using T = variant_alternative_t<I,variant>;
+            emplace<T>(il, forward<Args>(args)...);
+        };
+
+        // 20.7.2.5, value status
+        constexpr bool valueless_by_exception() const noexcept
+        {
+            return m_index == variant_npos;
+        }
+
+        constexpr size_t index() const noexcept
+        {
+            return m_index;
+        };
 
         // 20.7.2.6, swap
         void swap(variant& rhs) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...> &&
