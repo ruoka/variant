@@ -158,7 +158,7 @@ template <class T, class... Types>
 constexpr size_t __index_v = __index<T, Types...>::value;
 
 template <bool CopyConstructible,
-          //bool MoveConstructible,
+          bool MoveConstructible,
           //bool CopyAssignable,
           //bool MoveAssignable,
           bool TiviallyDestructible,
@@ -166,17 +166,19 @@ template <bool CopyConstructible,
 struct __variant_storage; // undefined
 
 template <class... Types>
-struct __variant_storage<false, true, Types...>
+struct __variant_storage<false,false,true,Types...>
 {
+    __storage<Types...> m_storage;
+
+// protected:
+
+    ptrdiff_t m_index = -1;
+
     __variant_storage(const __variant_storage&) = delete;
 
     __variant_storage(__variant_storage&&) = delete;
 
     ~__variant_storage() = default;
-
-    __storage<Types...> m_storage;
-
-    ptrdiff_t m_index = -1;
 
     __variant_storage() :
         m_storage{},
@@ -234,24 +236,23 @@ struct __variant_storage<false, true, Types...>
 };
 
 template <class... Types>
-struct __variant_storage<true,true,Types...> : public __variant_storage<false,true,Types...>
+struct __variant_storage<true,true,true,Types...> : public __variant_storage<false,false,true,Types...>
 {
-    using __base = __variant_storage<false,true,Types...>;
+// protected:
 
+    using __base = __variant_storage<false,false,true,Types...>;
     using __base::__base;
-
     using __base::__copy;
-
     using __base::__move;
 
     __variant_storage(const __variant_storage& v) :
-        __variant_storage<false,true,Types...>{}
+        __variant_storage<false,false,true,Types...>{}
     {
         __copy(v);
     }
 
     __variant_storage(__variant_storage&& v) :
-        __variant_storage<false,true,Types...>{}
+        __variant_storage<false,false,true,Types...>{}
     {
         __move(v);
         v.m_index = -1;
@@ -259,7 +260,40 @@ struct __variant_storage<true,true,Types...> : public __variant_storage<false,tr
 };
 
 template <class... Types>
-struct __variant_storage<false,false,Types...>
+struct __variant_storage<true,false,true,Types...> : public __variant_storage<false,false,true,Types...>
+{
+// protected:
+
+    using __base = __variant_storage<false,false,true,Types...>;
+    using __base::__base;
+    using __base::__copy;
+
+    __variant_storage(const __variant_storage& v) :
+        __variant_storage<false,false,true,Types...>{}
+    {
+        __copy(v);
+    }
+};
+
+template <class... Types>
+struct __variant_storage<false,true,true,Types...> : public __variant_storage<false,false,true,Types...>
+{
+// protected:
+
+    using __base = __variant_storage<false,false,true,Types...>;
+    using __base::__base;
+    using __base::__move;
+
+    __variant_storage(__variant_storage&& v) :
+        __variant_storage<false,false,true,Types...>{}
+    {
+        __move(v);
+        v.m_index = -1;
+    }
+};
+
+template <class... Types>
+struct __variant_storage<false,false,false,Types...>
 {
     __variant_storage(const __variant_storage&) = delete;
 
@@ -357,24 +391,53 @@ struct __variant_storage<false,false,Types...>
 };
 
 template <class... Types>
-struct __variant_storage<true, false, Types...> : public __variant_storage<false,false,Types...>
+struct __variant_storage<true,true,false,Types...> : public __variant_storage<false,false,false,Types...>
 {
-    using __base = __variant_storage<false,false,Types...>;
-
+//protected:
+    using __base = __variant_storage<false,false,false,Types...>;
     using __base::__base;
-
     using __base::__copy;
-
     using __base::__move;
 
     __variant_storage(const __variant_storage& v) :
-        __variant_storage<false,false,Types...>{}
+        __variant_storage<false,false,false,Types...>{}
     {
         __copy(v);
     }
 
     __variant_storage(__variant_storage&& v) :
-        __variant_storage<false,false,Types...>{}
+        __variant_storage<false,false,false,Types...>{}
+    {
+        __move(v);
+        v.m_index = -1;
+    }
+};
+
+template <class... Types>
+struct __variant_storage<true,false,false,Types...> : public __variant_storage<false,false,false,Types...>
+{
+//protected:
+    using __base = __variant_storage<false,false,false,Types...>;
+    using __base::__base;
+    using __base::__copy;
+
+    __variant_storage(const __variant_storage& v) :
+        __variant_storage<false,false,false,Types...>{}
+    {
+        __copy(v);
+    }
+};
+
+template <class... Types>
+struct __variant_storage<false,true,false,Types...> : public __variant_storage<false,false,false,Types...>
+{
+//protected:
+    using __base = __variant_storage<false,false,false,Types...>;
+    using __base::__base;
+    using __base::__move;
+
+    __variant_storage(__variant_storage&& v) :
+        __variant_storage<false,false,false,Types...>{}
     {
         __move(v);
         v.m_index = -1;

@@ -355,27 +355,22 @@ namespace std {
 
     template <class... Types>
     class variant : public __helper::__variant_storage<conjunction_v<is_copy_constructible<Types>...>,
-                                                       //conjunction_v<is_move_constructible<Types>...>,
+                                                       conjunction_v<is_move_constructible<Types>...>,
                                                        //conjunction_v<is_copy_assignable<Types>...>,
                                                        //conjunction_v<is_move_assignable<Types>...>,
                                                        conjunction_v<is_trivially_destructible<Types>...>,
                                                        Types...>
     {
         using __base = __helper::__variant_storage<conjunction_v<is_copy_constructible<Types>...>,
-                                                   //conjunction_v<is_move_constructible<Types>...>,
+                                                   conjunction_v<is_move_constructible<Types>...>,
                                                    //conjunction_v<is_copy_assignable<Types>...>,
                                                    //conjunction_v<is_move_assignable<Types>...>,
                                                    conjunction_v<is_trivially_destructible<Types>...>,
                                                    Types...>;
-
         using __base::__copy;
-
         using __base::__move;
-
         using __base::__construct;
-
         using __base::__destroy;
-
         using __base::m_index;
 
     public:
