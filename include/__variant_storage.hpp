@@ -157,7 +157,12 @@ struct __index<T, U, Types...> : integral_constant<size_t, 1 + __index<T, Types.
 template <class T, class... Types>
 constexpr size_t __index_v = __index<T, Types...>::value;
 
-template <bool TiviallyDestructible, bool CopyConstructible, class... Types>
+template <bool CopyConstructible,
+          //bool MoveConstructible,
+          //bool CopyAssignable,
+          //bool MoveAssignable,
+          bool TiviallyDestructible,
+          class... Types>
 struct __variant_storage; // undefined
 
 template <class... Types>
