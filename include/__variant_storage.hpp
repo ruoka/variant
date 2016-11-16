@@ -157,9 +157,18 @@ struct __index<T, U, Types...> : integral_constant<size_t, 1 + __index<T, Types.
 template <class T, class... Types>
 constexpr size_t __index_v = __index<T, Types...>::value;
 
-template <bool TiviallyDestructible, class... Types>
-struct __variant_storage
+template <bool TiviallyDestructible, bool CopyConstructible, class... Types>
+struct __variant_storage; // undefined
+
+template <class... Types>
+struct __variant_storage<false, true, Types...>
 {
+    __variant_storage(const __variant_storage&) = delete;
+
+    __variant_storage(__variant_storage&&) = delete;
+
+    ~__variant_storage() = default;
+
     __storage<Types...> m_storage;
 
     ptrdiff_t m_index = -1;
@@ -168,21 +177,6 @@ struct __variant_storage
         m_storage{},
         m_index{-1}
     {}
-
-    __variant_storage(const __variant_storage& v) :
-        m_storage{},
-        m_index{-1}
-    {
-        __copy(v);
-    }
-
-    __variant_storage(__variant_storage&& v) :
-        m_storage{},
-        m_index{-1}
-    {
-        __move(v);
-        v.m_index = -1;
-    }
 
     template <class T, class... Args>
     constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
@@ -195,8 +189,6 @@ struct __variant_storage
         m_storage{in_place<T>, forward<Args>(args) ...},
         m_index{__index_v<T, Types...>}
     {}
-
-    ~__variant_storage() = default;
 
     template <class T, class... Args>
     void __construct(in_place_type_t<T>, Args&&... args)
@@ -237,8 +229,35 @@ struct __variant_storage
 };
 
 template <class... Types>
-struct __variant_storage<false, Types...>
+struct __variant_storage<true,true,Types...> : public __variant_storage<false,true,Types...>
 {
+    using __base = __variant_storage<false,true,Types...>;
+
+    using __base::__base;
+
+    using __base::__copy;
+
+    using __base::__move;
+
+    __variant_storage(const __variant_storage& v) :
+        __variant_storage<false,true,Types...>{}
+    {
+        __copy(v);
+    }
+
+    __variant_storage(__variant_storage&& v) :
+        __variant_storage<false,true,Types...>{}
+    {
+        __move(v);
+        v.m_index = -1;
+    }
+};
+
+template <class... Types>
+struct __variant_storage<false,false,Types...>
+{
+    __variant_storage(const __variant_storage&) = delete;
+
     __storage<Types...> m_storage;
 
     ptrdiff_t m_index = -1;
@@ -247,21 +266,6 @@ struct __variant_storage<false, Types...>
         m_storage{},
         m_index{-1}
     {}
-
-    __variant_storage(const __variant_storage& v) :
-        m_storage{},
-        m_index{-1}
-    {
-        __copy(v);
-    }
-
-    __variant_storage(__variant_storage&& v) :
-        m_storage{},
-        m_index{-1}
-    {
-        __movet(v);
-        v.m_index = -1;
-    }
 
     template <class T, class... Args>
     __variant_storage(in_place_type_t<T>, Args&&... args) :
@@ -345,6 +349,31 @@ struct __variant_storage<false, Types...>
         constexpr F __array[sizeof...(Types)] = {&__variant_storage::__destroy<Types> ...};
         (this->*__array[m_index])();
     };
+};
+
+template <class... Types>
+struct __variant_storage<true, false, Types...> : public __variant_storage<false,false,Types...>
+{
+    using __base = __variant_storage<false,false,Types...>;
+
+    using __base::__base;
+
+    using __base::__copy;
+
+    using __base::__move;
+
+    __variant_storage(const __variant_storage& v) :
+        __variant_storage<false,false,Types...>{}
+    {
+        __copy(v);
+    }
+
+    __variant_storage(__variant_storage&& v) :
+        __variant_storage<false,false,Types...>{}
+    {
+        __move(v);
+        v.m_index = -1;
+    }
 };
 
 } // namespace std::__helper

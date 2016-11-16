@@ -354,9 +354,13 @@ namespace std {
     } // namespace __helper
 
     template <class... Types>
-    class variant : public __helper::__variant_storage<conjunction_v<is_trivially_destructible<Types>...>, Types...>
+    class variant : public __helper::__variant_storage<conjunction_v<is_copy_constructible<Types>...>,
+                                                       conjunction_v<is_trivially_destructible<Types>...>,
+                                                       Types...>
     {
-        using __base = __helper::__variant_storage<conjunction_v<is_trivially_destructible<Types>...>, Types...>;
+        using __base = __helper::__variant_storage<conjunction_v<is_copy_constructible<Types>...>,
+                                                   conjunction_v<is_trivially_destructible<Types>...>,
+                                                   Types...>;
 
         using __base::__copy;
 
@@ -385,21 +389,27 @@ namespace std {
                   enable_if_t<!is_default_constructible_v<T0>, bool> = false>
         constexpr variant() noexcept(is_nothrow_default_constructible_v<T0>) = delete;
 
-        variant(const variant& v) :
-            __base{v}
-        {
-            static_assert(conjunction_v<is_copy_constructible<Types> ...>,
-                "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
-            // __copy(v);
-        };
+        // variant(const variant& v) :
+        //     __base{v}
+        // {
+        //     static_assert(conjunction_v<is_copy_constructible<Types> ...>,
+        //         "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
+        //     // __copy(v);
+        // };
+        //
+        // variant(variant&& v) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...>) :
+        //     __base{forward<variant>(v)}
+        // {
+        //     static_assert(conjunction_v<is_move_constructible<Types> ...>,
+        //         "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
+        //     // __move(v);
+        // };
 
-        variant(variant&& v) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...>) :
-            __base{forward<variant>(v)}
-        {
-            static_assert(conjunction_v<is_move_constructible<Types> ...>,
-                "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
-            // __move(v);
-        };
+        // We'll inherit the copy and move constructors from the __base
+
+        variant(const variant&) = default;
+
+        variant(variant&&) = default;
 
         template <class T,
                   enable_if_t<!is_same_v<decay_t<T>,variant> && is_constructible_v<T,T>,bool> = true
