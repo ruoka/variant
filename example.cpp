@@ -131,7 +131,7 @@ int main()
     std::variant<bool,int,double,std::string> v7{true};
 
     variant v8{std::string{"ABCDEFG"}};
-    variant v9{v8};
+    // variant v9{v8}; FIXME
 
     return 0;
 }

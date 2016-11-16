@@ -386,7 +386,7 @@ namespace std {
         };
 
         template <class T0 = variant_alternative_t<0,variant>,
-                  enable_if_t<!is_default_constructible_v<T0>, bool> = true>
+                  enable_if_t<!is_default_constructible_v<T0>, bool> = false>
         constexpr variant() noexcept(is_nothrow_default_constructible_v<T0>) = delete;
 
         variant(const variant& v) :
