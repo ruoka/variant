@@ -157,26 +157,26 @@ struct __index<T, U, Types...> : integral_constant<size_t, 1 + __index<T, Types.
 template <class T, class... Types>
 constexpr size_t __index_v = __index<T, Types...>::value;
 
-template <class... Types>
-struct __trivially_destructible {
-
+template <bool TiviallyDestructible, class... Types>
+struct __variant_storage
+{
     __storage<Types...> m_storage;
 
     ptrdiff_t m_index = -1;
 
-    __trivially_destructible() :
+    __variant_storage() :
         m_storage{},
         m_index{-1}
     {}
 
-    __trivially_destructible(const __trivially_destructible& v) :
+    __variant_storage(const __variant_storage& v) :
         m_storage{},
         m_index{-1}
     {
         __copy(v);
     }
 
-    __trivially_destructible(__trivially_destructible&& v) :
+    __variant_storage(__variant_storage&& v) :
         m_storage{},
         m_index{-1}
     {
@@ -185,18 +185,18 @@ struct __trivially_destructible {
     }
 
     template <class T, class... Args>
-    constexpr __trivially_destructible(in_place_type_t<T>, Args&&... args) :
+    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
         m_storage{in_place<T>, forward<Args>(args) ...},
         m_index{__index_v<T, Types...>}
     {}
 
     template <class Alloc, class T, class... Args>
-    constexpr __trivially_destructible(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
+    constexpr __variant_storage(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
         m_storage{in_place<T>, forward<Args>(args) ...},
         m_index{__index_v<T, Types...>}
     {}
 
-    ~__trivially_destructible() = default;
+    ~__variant_storage() = default;
 
     template <class T, class... Args>
     void __construct(in_place_type_t<T>, Args&&... args)
@@ -207,7 +207,7 @@ struct __trivially_destructible {
     };
 
     template<class T>
-    void __copy(const __trivially_destructible& v)
+    void __copy(const __variant_storage& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
@@ -215,16 +215,16 @@ struct __trivially_destructible {
         m_index = v.m_index;
     }
 
-    void __copy(const __trivially_destructible& v)
+    void __copy(const __variant_storage& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
-        using F = void(__trivially_destructible::*)(const __trivially_destructible&);
-        constexpr F __array[sizeof...(Types)] = {&__trivially_destructible::__copy<Types> ...};
+        using F = void(__variant_storage::*)(const __variant_storage&);
+        constexpr F __array[sizeof...(Types)] = {&__variant_storage::__copy<Types> ...};
         (this->*__array[v.m_index])(v);
     }
 
-    void __move(__trivially_destructible&& v)
+    void __move(__variant_storage&& v)
     {
         __copy(v);
     }
@@ -237,25 +237,25 @@ struct __trivially_destructible {
 };
 
 template <class... Types>
-struct __not_trivially_destructible {
-
+struct __variant_storage<false, Types...>
+{
     __storage<Types...> m_storage;
 
     ptrdiff_t m_index = -1;
 
-    __not_trivially_destructible() :
+    __variant_storage() :
         m_storage{},
         m_index{-1}
     {}
 
-    __not_trivially_destructible(const __not_trivially_destructible& v) :
+    __variant_storage(const __variant_storage& v) :
         m_storage{},
         m_index{-1}
     {
         __copy(v);
     }
 
-    __not_trivially_destructible(__not_trivially_destructible&& v) :
+    __variant_storage(__variant_storage&& v) :
         m_storage{},
         m_index{-1}
     {
@@ -264,7 +264,7 @@ struct __not_trivially_destructible {
     }
 
     template <class T, class... Args>
-    __not_trivially_destructible(in_place_type_t<T>, Args&&... args) :
+    __variant_storage(in_place_type_t<T>, Args&&... args) :
         m_storage{},
         m_index{-1}
     {
@@ -272,14 +272,14 @@ struct __not_trivially_destructible {
     }
 
     template <class Alloc, class T, class... Args>
-    constexpr __not_trivially_destructible(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
+    constexpr __variant_storage(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
         m_storage{},
         m_index{-1}
     {
         __construct(in_place<T>, forward<Args>(args) ...);
     }
 
-    ~__not_trivially_destructible()
+    ~__variant_storage()
     {
         if(m_index >= 0)
             __destroy();
@@ -294,7 +294,7 @@ struct __not_trivially_destructible {
     };
 
     template<class T>
-    void __copy(const __not_trivially_destructible& v)
+    void __copy(const __variant_storage& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
@@ -302,17 +302,17 @@ struct __not_trivially_destructible {
         m_index = v.m_index;
     }
 
-    void __copy(const __not_trivially_destructible& v)
+    void __copy(const __variant_storage& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
-        using F = void(__not_trivially_destructible::*)(const __not_trivially_destructible&);
-        constexpr F __array[sizeof...(Types)] = {&__not_trivially_destructible::__copy<Types> ...};
+        using F = void(__variant_storage::*)(const __variant_storage&);
+        constexpr F __array[sizeof...(Types)] = {&__variant_storage::__copy<Types> ...};
         (this->*__array[v.m_index])(v);
     }
 
     template<class T>
-    void __move(__not_trivially_destructible&& v)
+    void __move(__variant_storage&& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
@@ -320,12 +320,12 @@ struct __not_trivially_destructible {
         m_index = v.m_index;
     }
 
-    void __move(__not_trivially_destructible&& v)
+    void __move(__variant_storage&& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
-        using F = void(__not_trivially_destructible::*)(__not_trivially_destructible&&);
-        constexpr F __array[sizeof...(Types)] = {&__not_trivially_destructible::__move<Types> ...};
+        using F = void(__variant_storage::*)(__variant_storage&&);
+        constexpr F __array[sizeof...(Types)] = {&__variant_storage::__move<Types> ...};
         (this->*__array[v.m_index])(move(v));
     }
 
@@ -341,8 +341,8 @@ struct __not_trivially_destructible {
     void __destroy()
     {
         assert(m_index >= 0 && m_index < sizeof...(Types));
-        using F = void(__not_trivially_destructible::*)();
-        constexpr F __array[sizeof...(Types)] = {&__not_trivially_destructible::__destroy<Types> ...};
+        using F = void(__variant_storage::*)();
+        constexpr F __array[sizeof...(Types)] = {&__variant_storage::__destroy<Types> ...};
         (this->*__array[m_index])();
     };
 };

@@ -354,13 +354,9 @@ namespace std {
     } // namespace __helper
 
     template <class... Types>
-    class variant : public conditional_t<conjunction_v<is_trivially_destructible<Types>...>,
-                                        __helper::__trivially_destructible<Types...>,
-                                        __helper::__not_trivially_destructible<Types...>>
+    class variant : public __helper::__variant_storage<conjunction_v<is_trivially_destructible<Types>...>, Types...>
     {
-        using __base = conditional_t<conjunction_v<is_trivially_destructible<Types>...>,
-                                            __helper::__trivially_destructible<Types...>,
-                                            __helper::__not_trivially_destructible<Types...>>;
+        using __base = __helper::__variant_storage<conjunction_v<is_trivially_destructible<Types>...>, Types...>;
 
         using __base::__copy;
 
