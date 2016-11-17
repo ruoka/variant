@@ -1,5 +1,5 @@
-#include <variant>
 #include <iostream>
+#include <variant>
 
 struct test_1
 {
@@ -52,14 +52,26 @@ void test_3(T t)
 void test_4(bool b)
 {}
 
+class foo{};
+
 int main()
 {
+    auto fb = std::variant<foo,bool,double>{false};
+    auto fd = std::variant<char*,int,bool,double>{2.1};
+    auto fi = std::variant<bool,double,int>{false};
+    auto fs = std::variant<char,bool,double,std::string>{std::string{}};
+    // auto ss = std::variant<std::string,std::string>{std::string{}};
+
+    std::cout << std::__helper::__count_v<bool,char,double,float> << std::endl;
+    std::cout << std::__helper::__count_v<bool,char,bool,double> << std::endl;
+    std::cout << std::__helper::__count_v<bool,bool,double,bool,bool> << std::endl;
+
     using variant = std::variant<bool,int,double,std::string>;
 
-    // std::cout << std::__helper::__index_v<bool,bool,int,double,std::string> << std::endl;
-    // std::cout << std::variant_size_v<variant> << std::endl;
-    // std::variant_alternative_t<3,variant> str = "abc";
-    // std::cout << str << std::endl;
+    std::cout << std::__helper::__index_v<bool,bool,int,double,std::string> << std::endl;
+    std::cout << std::variant_size_v<variant> << std::endl;
+    std::variant_alternative_t<3,variant> str = "abc";
+    std::cout << str << std::endl;
 
     variant v1{2.0};
     std::cout << v1.index() << std::endl;
@@ -131,7 +143,7 @@ int main()
     std::variant<bool,int,double,std::string> v7{true};
 
     variant v8{std::string{"ABCDEFG"}};
-    // variant v9{v8}; FIXME
+    variant v9{v8};
 
     return 0;
 }

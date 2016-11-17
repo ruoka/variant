@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include "__variant_storage.hpp"
+#include "__imaginary_function.hpp"
 
 namespace std {
 
@@ -397,13 +398,18 @@ namespace std {
         variant(variant&&) = default;
 
         template <class T,
-                  enable_if_t<!is_same_v<decay_t<T>,variant> && is_constructible_v<T,T>,bool> = true
+                  class Tj = __helper::__imaginary_function_argument_t<T,Types...>,
+                  enable_if_t<__helper::__imaginary_function_well_formed_v<Tj,Types...>,bool> = true,
+                  enable_if_t<!is_same_v<decay_t<T>,variant>,bool> = false,
+                  enable_if_t<is_constructible_v<Tj,T>,bool> = true
                   >
-        constexpr variant(T&& t) noexcept(conjunction_v<is_nothrow_constructible<Types> ...>) : // FIXME
-            __base{in_place<T>, forward<T>(t)}
+        constexpr variant(T&& t) noexcept(is_nothrow_constructible_v<Tj,T>) :
+            __base{in_place<Tj>, forward<T>(t)}
         {
-            static_assert(conjunction_v<is_constructible<Types,Types> ...>,
-                "This function shall not participate in overload resolution unless is_constructible_v<Ti> is true for all i.");
+            static_assert(!is_same_v<decay_t<T>,variant> && is_constructible_v<Tj,T> && __helper::__imaginary_function_well_formed_v<Tj,Types...>,
+                R"(This function shall not participate in overload resolution
+                   unless is_same_v<decay_t<T>, variant> is false, unless is_constructible_v<Tj, T> is true, and
+                   unless the expression FUN(std::forward<T>(t)) (with FUN being the above-mentioned set of imaginary functions) is well formed.)");
         };
 
         template <class T,
@@ -476,17 +482,18 @@ namespace std {
 
         template <class Alloc,
                   class T,
-                  enable_if_t<conjunction_v<
-                             negation< is_same< decay_t<T> , variant > >,
-                             is_constructible< T , T >
-                             >,
-                             bool> = true
+                  class Tj = __helper::__imaginary_function_argument_t<T,Types...>,
+                  enable_if_t<__helper::__imaginary_function_well_formed_v<Tj,Types...>,bool> = true,
+                  enable_if_t<!is_same_v<decay_t<T>,variant>,bool> = false,
+                  enable_if_t<is_constructible_v<Tj,T>,bool> = true
                   >
-        variant(allocator_arg_t, const Alloc& a, T&& t) : // FIXME
+        variant(allocator_arg_t, const Alloc& a, T&& t) :
             __base{allocator_arg_t{}, a, in_place<T>, forward<T>(t)}
         {
-            static_assert(conjunction_v<is_constructible<Types,Types> ...>,
-                "This function shall not participate in overload resolution unless is_constructible_v<Ti> is true for all i.");
+            static_assert(!is_same_v<decay_t<T>,variant> && is_constructible_v<Tj,T> && __helper::__imaginary_function_well_formed_v<Tj,Types...>,
+                R"(This function shall not participate in overload resolution
+                   unless is_same_v<decay_t<T>, variant> is false, unless is_constructible_v<Tj, T> is true, and
+                   unless the expression FUN(std::forward<T>(t)) (with FUN being the above-mentioned set of imaginary functions) is well formed.)");
         };
 
         template <class Alloc,

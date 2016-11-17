@@ -145,6 +145,9 @@ union __storage
 template <class T, class... Types>
 struct __index; // undefined
 
+template <class T, class... Types>
+constexpr size_t __index_v = __index<T, Types...>::value;
+
 template <class T>
 struct __index<T> : integral_constant<size_t, 1> {};
 
@@ -152,10 +155,7 @@ template <class T, class... Types>
 struct __index<T, T, Types...> : integral_constant<size_t, 0> {};
 
 template <class T, class U, class... Types>
-struct __index<T, U, Types...> : integral_constant<size_t, 1 + __index<T, Types...>::value> {};
-
-template <class T, class... Types>
-constexpr size_t __index_v = __index<T, Types...>::value;
+struct __index<T, U, Types...> : integral_constant<size_t, 1 + __index_v<T, Types...>> {};
 
 template <bool CopyConstructible,
           bool MoveConstructible,
