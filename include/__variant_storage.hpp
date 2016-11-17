@@ -159,147 +159,27 @@ constexpr size_t __index_v = __index<T, Types...>::value;
 
 template <bool CopyConstructible,
           bool MoveConstructible,
-          //bool CopyAssignable,
-          //bool MoveAssignable,
+          bool CopyAssignable,
+          bool MoveAssignable,
           bool TiviallyDestructible,
           class... Types>
-struct __variant_storage; // undefined
+class __variant_storage; // undefined
 
 template <class... Types>
-struct __variant_storage<false,false,true,Types...>
+class __variant_storage<false,false,false,false,false,Types...>
 {
+public:
+
     __storage<Types...> m_storage;
 
-// protected:
+protected:
 
     ptrdiff_t m_index = -1;
 
     __variant_storage(const __variant_storage&) = delete;
-
     __variant_storage(__variant_storage&&) = delete;
-
-    ~__variant_storage() = default;
-
-    __variant_storage() :
-        m_storage{},
-        m_index{-1}
-    {}
-
-    template <class T, class... Args>
-    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
-        m_storage{in_place<T>, forward<Args>(args) ...},
-        m_index{__index_v<T, Types...>}
-    {}
-
-    template <class Alloc, class T, class... Args>
-    constexpr __variant_storage(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
-        m_storage{in_place<T>, forward<Args>(args) ...},
-        m_index{__index_v<T, Types...>}
-    {}
-
-    template <class T, class... Args>
-    void __construct(in_place_type_t<T>, Args&&... args)
-    {
-        assert(m_index < 0);
-        new(&m_storage) remove_reference_t<T>{forward<Args>(args) ...};
-        m_index = __index_v<T, Types...>;
-    };
-
-    template<class T>
-    void __copy(const __variant_storage& v)
-    {
-        assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
-        assert(m_index < 0);
-        __construct(in_place<T>,v.m_storage.template get<T>());
-        m_index = v.m_index;
-    }
-
-    void __copy(const __variant_storage& v)
-    {
-        assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
-        assert(m_index < 0);
-        using F = void(__variant_storage::*)(const __variant_storage&);
-        constexpr F __array[sizeof...(Types)] = {&__variant_storage::__copy<Types> ...};
-        (this->*__array[v.m_index])(v);
-    }
-
-    void __move(__variant_storage&& v)
-    {
-        __copy(v);
-    }
-
-    void __destroy()
-    {
-        assert(m_index >= 0);
-        m_index = -1;
-    };
-};
-
-template <class... Types>
-struct __variant_storage<true,true,true,Types...> : public __variant_storage<false,false,true,Types...>
-{
-// protected:
-
-    using __base = __variant_storage<false,false,true,Types...>;
-    using __base::__base;
-    using __base::__copy;
-    using __base::__move;
-
-    __variant_storage(const __variant_storage& v) :
-        __variant_storage<false,false,true,Types...>{}
-    {
-        __copy(v);
-    }
-
-    __variant_storage(__variant_storage&& v) :
-        __variant_storage<false,false,true,Types...>{}
-    {
-        __move(v);
-        v.m_index = -1;
-    }
-};
-
-template <class... Types>
-struct __variant_storage<true,false,true,Types...> : public __variant_storage<false,false,true,Types...>
-{
-// protected:
-
-    using __base = __variant_storage<false,false,true,Types...>;
-    using __base::__base;
-    using __base::__copy;
-
-    __variant_storage(const __variant_storage& v) :
-        __variant_storage<false,false,true,Types...>{}
-    {
-        __copy(v);
-    }
-};
-
-template <class... Types>
-struct __variant_storage<false,true,true,Types...> : public __variant_storage<false,false,true,Types...>
-{
-// protected:
-
-    using __base = __variant_storage<false,false,true,Types...>;
-    using __base::__base;
-    using __base::__move;
-
-    __variant_storage(__variant_storage&& v) :
-        __variant_storage<false,false,true,Types...>{}
-    {
-        __move(v);
-        v.m_index = -1;
-    }
-};
-
-template <class... Types>
-struct __variant_storage<false,false,false,Types...>
-{
-    __variant_storage(const __variant_storage&) = delete;
-
-    __storage<Types...> m_storage;
-
-    ptrdiff_t m_index = -1;
+    __variant_storage& operator=(const __variant_storage&) = delete;
+    __variant_storage& operator=(__variant_storage&&) = delete;
 
     __variant_storage() :
         m_storage{},
@@ -391,57 +271,191 @@ struct __variant_storage<false,false,false,Types...>
 };
 
 template <class... Types>
-struct __variant_storage<true,true,false,Types...> : public __variant_storage<false,false,false,Types...>
+class __variant_storage<false,false,false,false,true,Types...>
 {
-//protected:
-    using __base = __variant_storage<false,false,false,Types...>;
-    using __base::__base;
-    using __base::__copy;
-    using __base::__move;
+public:
 
-    __variant_storage(const __variant_storage& v) :
-        __variant_storage<false,false,false,Types...>{}
+    __storage<Types...> m_storage;
+
+protected:
+
+    ptrdiff_t m_index = -1;
+
+    __variant_storage(const __variant_storage&) = delete;
+    __variant_storage(__variant_storage&&) = delete;
+    __variant_storage& operator=(const __variant_storage&) = delete;
+    __variant_storage& operator=(__variant_storage&&) = delete;
+    ~__variant_storage() = default;
+
+    __variant_storage() :
+        m_storage{},
+        m_index{-1}
+    {}
+
+    template <class T, class... Args>
+    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
+        m_storage{in_place<T>, forward<Args>(args) ...},
+        m_index{__index_v<T, Types...>}
+    {}
+
+    template <class Alloc, class T, class... Args>
+    constexpr __variant_storage(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
+        m_storage{in_place<T>, forward<Args>(args) ...},
+        m_index{__index_v<T, Types...>}
+    {}
+
+    template <class T, class... Args>
+    void __construct(in_place_type_t<T>, Args&&... args)
+    {
+        assert(m_index < 0);
+        new(&m_storage) remove_reference_t<T>{forward<Args>(args) ...};
+        m_index = __index_v<T, Types...>;
+    };
+
+    template<class T>
+    void __copy(const __variant_storage& v)
+    {
+        assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
+        assert(m_index < 0);
+        __construct(in_place<T>,v.m_storage.template get<T>());
+        m_index = v.m_index;
+    }
+
+    void __copy(const __variant_storage& v)
+    {
+        assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
+        assert(m_index < 0);
+        using F = void(__variant_storage::*)(const __variant_storage&);
+        constexpr F __array[sizeof...(Types)] = {&__variant_storage::__copy<Types> ...};
+        (this->*__array[v.m_index])(v);
+    }
+
+    void __move(__variant_storage&& v)
     {
         __copy(v);
     }
 
-    __variant_storage(__variant_storage&& v) :
-        __variant_storage<false,false,false,Types...>{}
+    void __destroy()
     {
-        __move(v);
-        v.m_index = -1;
+        assert(m_index >= 0);
+        m_index = -1;
+    };
+};
+
+template <bool TiviallyDestructible,
+          class... Types>
+class __variant_storage<false,false,false,true,TiviallyDestructible,Types...> :
+public __variant_storage<false,false,false,false,TiviallyDestructible,Types...>
+{
+    using __base = __variant_storage<false,false,false,false,TiviallyDestructible,Types...>;
+    using __base::__base;
+
+protected:
+
+    using __base::__move;
+    using __base::__destroy;
+    using __base::m_index;
+
+    __variant_storage& operator=(__variant_storage&& rhs) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...> &&
+                                                         conjunction_v<is_nothrow_move_assignable<Types> ...>)
+    {
+        static_assert(conjunction_v<is_move_constructible<Types> ...> &&
+                      conjunction_v<is_move_assignable   <Types> ...> ,
+        R"(This function shall not participate in overload resolution unless is_move_constructible_- v<Ti> &&
+                                                                             is_move_assignable_v<Ti> is true for all i.)");
+        if(!(m_index < 0))
+            __destroy();
+        if(!(rhs.m_index < 0))
+            __move(move(rhs));
+        return *this;
     }
 };
 
-template <class... Types>
-struct __variant_storage<true,false,false,Types...> : public __variant_storage<false,false,false,Types...>
+template <bool MoveAssignable,
+          bool TiviallyDestructible,
+          class... Types>
+class __variant_storage<false,false,true,MoveAssignable,TiviallyDestructible,Types...> :
+public __variant_storage<false,false,false,MoveAssignable,TiviallyDestructible,Types...>
 {
-//protected:
-    using __base = __variant_storage<false,false,false,Types...>;
+    using __base = __variant_storage<false,false,false,MoveAssignable,TiviallyDestructible,Types...>;
     using __base::__base;
+
+protected:
+
     using __base::__copy;
+    using __base::__destroy;
+    using __base::m_index;
 
-    __variant_storage(const __variant_storage& v) :
-        __variant_storage<false,false,false,Types...>{}
+    __variant_storage& operator=(const __variant_storage& rhs)
     {
-        __copy(v);
+        static_assert(conjunction_v<is_copy_constructible<Types> ...> &&
+                      conjunction_v<is_move_constructible<Types> ...> &&
+                      conjunction_v<is_copy_assignable   <Types> ...> ,
+        R"(This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> &&
+                                                                             is_move_constructible_v<Ti> &&
+                                                                             is_copy_assignable_v<Ti> is true for all i.)");
+        if(!(m_index < 0))
+            __destroy();
+        if(!(rhs.m_index < 0))
+            __copy(rhs);
+        return *this;
     }
+
+    __variant_storage& operator=(__variant_storage&&) = default;
 };
 
-template <class... Types>
-struct __variant_storage<false,true,false,Types...> : public __variant_storage<false,false,false,Types...>
+template <bool CopyAssignable,
+          bool MoveAssignable,
+          bool TiviallyDestructible,
+          class... Types>
+class __variant_storage<false,true,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...> :
+public __variant_storage<false,false,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>
 {
-//protected:
-    using __base = __variant_storage<false,false,false,Types...>;
+    using __base = __variant_storage<false,false,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>;
     using __base::__base;
+
+protected:
+
     using __base::__move;
 
     __variant_storage(__variant_storage&& v) :
-        __variant_storage<false,false,false,Types...>{}
+        __base{}
     {
+        static_assert(conjunction_v<is_copy_constructible<Types> ...>,
+            "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
         __move(v);
         v.m_index = -1;
     }
+
+    __variant_storage& operator=(const __variant_storage&) = default;
+    __variant_storage& operator=(__variant_storage&&) = default;
+};
+
+template <bool MoveConstructible,
+          bool CopyAssignable,
+          bool MoveAssignable,
+          bool TiviallyDestructible,
+          class... Types>
+class __variant_storage<true,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...> :
+public __variant_storage<false,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>
+{
+    using __base = __variant_storage<false,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>;
+    using __base::__base;
+
+protected:
+
+    using __base::__copy;
+
+    __variant_storage(const __variant_storage& v) :
+        __base{}
+    {
+        static_assert(conjunction_v<is_move_constructible<Types> ...>,
+            "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
+        __copy(v);
+    }
+
+    __variant_storage& operator=(const __variant_storage&) = default;
+    __variant_storage& operator=(__variant_storage&&) = default;
 };
 
 } // namespace std::__helper
