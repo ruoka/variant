@@ -131,10 +131,10 @@ int main()
     std::cout << hb(true) << std::endl;
 
     std::allocator<char> a1;
+
     variant v3{std::allocator_arg_t{}, a1, std::string{"ABCDEFG"}};
     std::visit([](const auto& arg){std::cout << arg << std::endl;}, v3);
 
-    std::allocator<char> a2;
     variant v4{std::allocator_arg_t{}, a1, std::string{"HIJKLM"}};
     std::visit([](const auto& arg){std::cout << arg << std::endl;}, v4);
 
@@ -144,8 +144,14 @@ int main()
 
     std::variant<bool,int,double,std::string> v7{true};
 
-    variant v8{std::string{"ABCDEFG"}};
-    variant v9{v8};
+    variant v10{std::string{"ABCDEFG"}};
+    variant v11{v10};
+
+    variant v12{std::allocator_arg_t{}, a1, v11};
+    std::visit([](const auto& arg){std::cout << arg << std::endl;}, v3);
+
+    variant v13{std::allocator_arg_t{}, a1, std::in_place<std::string>, "HIJKLM"};
+    std::visit([](const auto& arg){std::cout << arg << std::endl;}, v4);
 
     return 0;
 }

@@ -219,11 +219,38 @@ namespace std::__helper {
                 __destroy();
         }
 
-        template <class T, class... Args>
+        template <class T,
+                  class... Args,
+                  enable_if_t<is_constructible_v<T,Args&&...>,bool> = true
+                  >
         void __construct(in_place_type_t<T>, Args&&... args)
         {
             assert(m_index < 0);
-            new(&m_storage) remove_reference_t<T>{forward<Args>(args) ...};
+            new(&m_storage) T{forward<Args>(args) ...};
+            m_index = __index_v<T, Types...>;
+        };
+
+        template <class Alloc,
+                  class T,
+                  class... Args,
+                  enable_if_t<is_constructible_v<T,allocator_arg_t,const Alloc&,Args&&...>,bool> = true
+                  >
+        void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
+        {
+            assert(m_index < 0);
+            new(&m_storage) T{allocator_arg_t{}, a, forward<Args>(args) ...};
+            m_index = __index_v<T, Types...>;
+        };
+
+        template <class Alloc,
+                  class T,
+                  class... Args,
+                  enable_if_t<is_constructible_v<T,Args&&...,const Alloc&>,bool> = true
+                  >
+        void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
+        {
+            assert(m_index < 0);
+            new(&m_storage) T{forward<Args>(args) ..., a};
             m_index = __index_v<T, Types...>;
         };
 
@@ -271,7 +298,7 @@ namespace std::__helper {
             m_index = -1;
         };
 
-        template<class T, enable_if_t<!is_class_v<decay_t<T>>,bool> = true>
+        template<class T, enable_if_t<!is_class_v<decay_t<T>>,bool> = false>
         void __destroy()
         {
             assert(m_index >= 0);
@@ -311,12 +338,6 @@ namespace std::__helper {
 
         template <class T, class... Args>
         constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
-            m_storage{in_place<T>, forward<Args>(args) ...},
-            m_index{__index_v<T, Types...>}
-        {}
-
-        template <class Alloc, class T, class... Args>
-        constexpr __variant_storage(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
             m_storage{in_place<T>, forward<Args>(args) ...},
             m_index{__index_v<T, Types...>}
         {}

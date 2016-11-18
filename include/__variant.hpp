@@ -466,18 +466,20 @@ namespace std {
 
         template <class Alloc>
         variant(allocator_arg_t, const Alloc& a, const variant& v) :
-            __base{allocator_arg_t{}, a, forward<variant>(v)}
+            __base{}
         {
             static_assert(conjunction_v<is_copy_constructible<Types> ...>,
                 "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
+            __copy(v); // FIXME
         }
 
         template <class Alloc>
         variant(allocator_arg_t, const Alloc& a, variant&& v) :
-            __base{allocator_arg_t{}, a, forward<variant>(v)}
+            __base{}
         {
             static_assert(conjunction_v<is_move_constructible<Types> ...>,
                 "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
+            __move(v); // FIXME
         }
 
         template <class Alloc,
