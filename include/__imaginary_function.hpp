@@ -11,8 +11,12 @@ namespace std::__helper {
     template <>
     struct __imaginary_function<> {constexpr void operator()() const noexcept;};
 
-    template <>
-    struct __imaginary_function<void> {constexpr void operator()() const noexcept;};
+    template <typename... Ts>
+    struct __imaginary_function<void, Ts...> : __imaginary_function<Ts...>
+    {
+        using __imaginary_function<Ts...>::operator();
+        constexpr __argument<void> operator()() const noexcept;
+    };
 
     template <typename T, typename... Ts>
     struct __imaginary_function<T, Ts...> : __imaginary_function<Ts...>

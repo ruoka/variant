@@ -56,11 +56,13 @@ class foo{};
 
 int main()
 {
-    auto fb = std::variant<foo,bool,double>{false};
     auto fd = std::variant<char*,int,bool,double>{2.1};
-    auto fi = std::variant<bool,double,int>{false};
+    auto fi = std::variant<bool,foo,double,int>{false};
     auto fs = std::variant<char,bool,double,std::string>{std::string{}};
     // auto ss = std::variant<std::string,std::string>{std::string{}};
+
+    std::variant<std::monostate,void,bool,double> fb{};
+    fb.emplace<bool>(true);
 
     std::cout << std::__helper::__count_v<bool,char,double,float> << std::endl;
     std::cout << std::__helper::__count_v<bool,char,bool,double> << std::endl;
