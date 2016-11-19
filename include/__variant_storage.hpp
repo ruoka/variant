@@ -210,7 +210,7 @@ namespace std::__helper {
             m_storage{},
             m_index{-1}
         {
-            __construct(in_place<T>, forward<Args>(args) ...);
+            __construct(allocator_arg_t{}, a, in_place<T>, forward<Args>(args) ...);
         }
 
         ~__variant_storage()
@@ -221,7 +221,7 @@ namespace std::__helper {
 
         template <class T,
                   class... Args,
-                  enable_if_t<is_constructible_v<T,Args&&...>,bool> = true
+                  enable_if_t<is_constructible_v<T,Args...>,bool> = true
                   >
         void __construct(in_place_type_t<T>, Args&&... args)
         {
@@ -233,7 +233,7 @@ namespace std::__helper {
         template <class Alloc,
                   class T,
                   class... Args,
-                  enable_if_t<is_constructible_v<T,allocator_arg_t,const Alloc&,Args&&...>,bool> = true
+                  enable_if_t<is_constructible_v<T,allocator_arg_t,const Alloc&,Args...>,bool> = true
                   >
         void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
         {
@@ -245,7 +245,7 @@ namespace std::__helper {
         template <class Alloc,
                   class T,
                   class... Args,
-                  enable_if_t<is_constructible_v<T,Args&&...,const Alloc&>,bool> = true
+                  enable_if_t<is_constructible_v<T,Args...,const Alloc&>,bool> = true
                   >
         void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
         {
@@ -254,44 +254,96 @@ namespace std::__helper {
             m_index = __index_v<T, Types...>;
         };
 
-        template<class T>
-        void __copy(const __variant_storage& v)
+        template <class Alloc,
+                  class T,
+                  class... Args,
+                  enable_if_t<!is_constructible_v<T,allocator_arg_t,const Alloc&,Args...> && !is_constructible_v<T,Args...,const Alloc&>,bool> = true
+                  >
+        void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
         {
-            assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
             assert(m_index < 0);
-            __construct(in_place<T>,v.m_storage.template get<T>());
-            m_index = v.m_index;
+            new(&m_storage) T{forward<Args>(args) ...};
+            m_index = __index_v<T, Types...>;
+        };
+
+private:
+
+        template<class T>
+        void __private_copy(const __variant_storage& v)
+        {
+            __construct(in_place<T>, v.m_storage.template get<T>());
         }
+
+        template <class Alloc,
+                  class T
+                  >
+        void __private_copy(allocator_arg_t, const Alloc& a, const __variant_storage& v)
+        {
+            __construct(allocator_arg_t{}, a, in_place<T>, v.m_storage.template get<T>());
+        }
+
+protected:
 
         void __copy(const __variant_storage& v)
         {
             assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
             assert(m_index < 0);
             using F = void(__variant_storage::*)(const __variant_storage&);
-            constexpr F __array[sizeof...(Types)] = {&__variant_storage::__copy<Types> ...};
+            constexpr F __array[sizeof...(Types)] = {&__variant_storage::__private_copy<Types> ...};
             (this->*__array[v.m_index])(v);
         }
 
-        template<class T>
-        void __move(__variant_storage&& v)
+        template <class Alloc>
+        void __copy(allocator_arg_t, const Alloc& a, const __variant_storage& v)
         {
             assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
             assert(m_index < 0);
-            __construct(in_place<T>,v.m_storage.template get<T>());
-            m_index = v.m_index;
+            using function = void(__variant_storage::*)(allocator_arg_t, const Alloc&, const __variant_storage&);
+            constexpr function __array[sizeof...(Types)] = {&__variant_storage::__private_copy<Alloc,Types> ...};
+            (this->*__array[v.m_index])(allocator_arg_t{}, a, v);
         }
+
+private:
+
+        template<class T>
+        void __private_move(__variant_storage&& v)
+        {
+            __construct(in_place<T>, move(v.m_storage.template get<T>()));
+        }
+
+        template <class Alloc,
+                  class T
+                  >
+        void __private_move(allocator_arg_t, const Alloc& a, __variant_storage&& v)
+        {
+            __construct(allocator_arg_t{}, a, in_place<T>, move(v.m_storage.template get<T>()));
+        }
+
+protected:
 
         void __move(__variant_storage&& v)
         {
             assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
             assert(m_index < 0);
             using F = void(__variant_storage::*)(__variant_storage&&);
-            constexpr F __array[sizeof...(Types)] = {&__variant_storage::__move<Types> ...};
-            (this->*__array[v.m_index])(move(v));
+            constexpr F __array[sizeof...(Types)] = {&__variant_storage::__private_move<Types> ...};
+            (this->*__array[v.m_index])(forward<__variant_storage>(v));
         }
 
+        template <class Alloc>
+        void __move(allocator_arg_t, const Alloc& a, __variant_storage&& v)
+        {
+            assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
+            assert(m_index < 0);
+            using function = void(__variant_storage::*)(allocator_arg_t, const Alloc&, __variant_storage&&);
+            constexpr function __array[sizeof...(Types)] = {&__variant_storage::__private_move<Alloc,Types> ...};
+            (this->*__array[v.m_index])(allocator_arg_t{}, a, forward<__variant_storage>(v));
+        }
+
+private:
+
         template<class T, enable_if_t<is_class_v<decay_t<T>>,bool> = true>
-        void __destroy()
+        void __private_destroy()
         {
             assert(m_index >= 0);
             reinterpret_cast<add_pointer_t<T>>(&m_storage)->~T();
@@ -299,17 +351,19 @@ namespace std::__helper {
         };
 
         template<class T, enable_if_t<!is_class_v<decay_t<T>>,bool> = false>
-        void __destroy()
+        void __private_destroy()
         {
             assert(m_index >= 0);
             m_index = -1;
         };
 
+protected:
+
         void __destroy()
         {
             assert(m_index >= 0 && m_index < sizeof...(Types));
             using F = void(__variant_storage::*)();
-            constexpr F __array[sizeof...(Types)] = {&__variant_storage::__destroy<Types> ...};
+            constexpr F __array[sizeof...(Types)] = {&__variant_storage::__private_destroy<Types> ...};
             (this->*__array[m_index])();
         };
     };

@@ -469,7 +469,7 @@ namespace std {
         {
             static_assert(conjunction_v<is_copy_constructible<Types> ...>,
                 "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
-            __copy(v); // FIXME
+            __copy(allocator_arg_t{}, a, v);
         }
 
         template <class Alloc,
@@ -481,7 +481,7 @@ namespace std {
         {
             static_assert(conjunction_v<is_move_constructible<Types> ...>,
                 "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
-            __move(v); // FIXME
+            __move(allocator_arg_t{}, a, forward<variant>(v));
         }
 
         template <class Alloc,
