@@ -1,4 +1,0 @@
-#ifndef _LIBCPP_VARIANT
-#define _LIBCPP_VARIANT
-#include <__variant.hpp>
-#endif // _LIBCPP__VARIANT

@@ -12,7 +12,7 @@ UNITTESTS_BIN = $(patsubst %.cpp,%,$(UNITTESTS_SRC))
 $(UNITTESTS_BIN) : $(@:test/%=test/%.cpp)
 	$(CXX) $(CXXFLAGS) $(@:test/%=test/%.cpp) -o $@
 
-example: example.cpp include/__variant.hpp include/__variant_storage.hpp
+example: example.cpp include/experimental/variant
 	$(CXX) $(CXXFLAGS) example.cpp -o example
 
 .PHONY: all

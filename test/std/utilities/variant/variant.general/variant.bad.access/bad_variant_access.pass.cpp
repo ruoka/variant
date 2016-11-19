@@ -1,8 +1,9 @@
-#include <variant>
+#include <experimental/variant>
 #include <cassert>
 
-using std::variant;
-using std::get;
+using std::experimental::variant;
+using std::experimental::get;
+using std::experimental::bad_variant_access;
 
 int main()
 {
@@ -12,7 +13,7 @@ int main()
         get<char>(v);
         assert(false);
     }
-    catch(std::bad_variant_access& bad)
+    catch(bad_variant_access& bad)
     {}
 
     try
@@ -21,7 +22,7 @@ int main()
         get<2>(v);
         assert(false);
     }
-    catch(std::bad_variant_access& bad)
+    catch(bad_variant_access& bad)
     {}
 
     try
@@ -29,7 +30,7 @@ int main()
         variant<unsigned,double,char> v{9u};
         get<unsigned>(v);
     }
-    catch(std::bad_variant_access& bad)
+    catch(bad_variant_access& bad)
     {
         assert(false);
     }
@@ -39,7 +40,7 @@ int main()
         variant<unsigned,double,char> v{9u};
         get<0>(v);
     }
-    catch(std::bad_variant_access& bad)
+    catch(bad_variant_access& bad)
     {
         assert(false);
     }

@@ -1,5 +1,13 @@
 #include <iostream>
-#include <variant>
+#include <experimental/variant>
+
+using std::experimental::variant;
+using std::experimental::variant_size_v;
+using std::experimental::variant_alternative_t;
+using std::experimental::monostate;
+using std::experimental::holds_alternative;
+using std::experimental::get;
+using std::experimental::visit;
 
 struct test_1
 {
@@ -56,75 +64,75 @@ class foo{};
 
 int main()
 {
-    auto fd = std::variant<char*,int,bool,double>{2.1};
-    auto fi = std::variant<bool,foo,double,int>{false};
-    auto fs = std::variant<char,bool,double,std::string>{std::string{}};
-    // auto ss = std::variant<std::string,std::string>{std::string{}};
+    auto fd = variant<char*,int,bool,double>{2.1};
+    auto fi = variant<bool,foo,double,int>{false};
+    auto fs = variant<char,bool,double,std::string>{std::string{}};
+    // auto ss = variant<std::string,std::string>{std::string{}};
 
-    std::variant<std::monostate,void,bool,double> fb{};
+    variant<monostate,void,bool,double> fb{};
     fb.emplace<bool>(true);
 
-    std::cout << std::__helper::__count_v<bool,char,double,float> << std::endl;
-    std::cout << std::__helper::__count_v<bool,char,bool,double> << std::endl;
-    std::cout << std::__helper::__count_v<bool,bool,double,bool,bool> << std::endl;
+    std::cout << std::experimental::__count_v<bool,char,double,float> << std::endl;
+    std::cout << std::experimental::__count_v<bool,char,bool,double> << std::endl;
+    std::cout << std::experimental::__count_v<bool,bool,double,bool,bool> << std::endl;
+    std::cout << std::experimental::__index_v<bool,bool,int,double,std::string> << std::endl;
 
-    using variant = std::variant<bool,int,double,std::string>;
+    using test = variant<bool,int,double,std::string>;
+    std::cout << variant_size_v<test> << std::endl;
 
-    std::cout << std::__helper::__index_v<bool,bool,int,double,std::string> << std::endl;
-    std::cout << std::variant_size_v<variant> << std::endl;
-    std::variant_alternative_t<3,variant> str = "abc";
+    variant_alternative_t<3,test> str = "abc";
     std::cout << str << std::endl;
 
-    variant v1{2.0};
+    test v1{2.0};
     std::cout << v1.index() << std::endl;
-    std::cout << std::get<2>(v1) << std::endl;
+    std::cout << get<2>(v1) << std::endl;
 
-    std::cout << std::boolalpha << std::holds_alternative<bool>(v1) << std::endl;
-    std::cout << std::boolalpha << std::holds_alternative<int>(v1) << std::endl;
-    std::cout << std::boolalpha << std::holds_alternative<double>(v1) << std::endl;
+    std::cout << std::boolalpha << holds_alternative<bool>(v1) << std::endl;
+    std::cout << std::boolalpha << holds_alternative<int>(v1) << std::endl;
+    std::cout << std::boolalpha << holds_alternative<double>(v1) << std::endl;
 
-    variant v2{true};
+    test v2{true};
     std::cout << v2.index() << std::endl;
-    std::cout << std::get<0>(v2) << std::endl;
+    std::cout << get<0>(v2) << std::endl;
 
-    std::cout << std::boolalpha << std::holds_alternative<bool>(v2) << std::endl;
-    std::cout << std::boolalpha << std::holds_alternative<int>(v2) << std::endl;
-    std::cout << std::boolalpha << std::holds_alternative<double>(v2) << std::endl;
+    std::cout << std::boolalpha << holds_alternative<bool>(v2) << std::endl;
+    std::cout << std::boolalpha << holds_alternative<int>(v2) << std::endl;
+    std::cout << std::boolalpha << holds_alternative<double>(v2) << std::endl;
 
     std::cout << std::boolalpha << (v1 == v2) << std::endl;
 
     v1 = false;
 
     std::cout << v1.index() << std::endl;
-    std::cout << std::get<0>(v1) << std::endl;
-    std::cout << std::boolalpha << std::holds_alternative<bool>(v1) << std::endl;
-    std::cout << std::boolalpha << std::holds_alternative<int>(v1) << std::endl;
-    std::cout << std::boolalpha << std::holds_alternative<double>(v1) << std::endl;
+    std::cout << get<0>(v1) << std::endl;
+    std::cout << std::boolalpha << holds_alternative<bool>(v1) << std::endl;
+    std::cout << std::boolalpha << holds_alternative<int>(v1) << std::endl;
+    std::cout << std::boolalpha << holds_alternative<double>(v1) << std::endl;
 
     std::cout << std::boolalpha << (v1 == v2) << std::endl;
 
-    constexpr auto less = std::__helper::__make_less_array<bool,int,double,std::string>(std::index_sequence_for<bool, int, double, std::string>{});
+    constexpr auto less = std::experimental::__make_less_array<bool,int,double,std::string>(std::index_sequence_for<bool, int, double, std::string>{});
     std::cout << std::boolalpha << less[0](v1,v2) << std::endl;
 
     v1 = true;
-    std::visit(test_1{}, v1);
-    std::visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
+    visit(test_1{}, v1);
+    visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
     v1 = 1;
-    std::visit(test_1{}, v1);
-    std::visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
+    visit(test_1{}, v1);
+    // visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
     v1 = 2.2;
-    std::visit(test_1{}, v1);
-    std::visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
+    visit(test_1{}, v1);
+    // visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
 
     v1 = false;
-    std::visit(test_2{}, v1, v2);
-    std::visit([](const auto& arg1,const auto& arg2){std::cout << "2xarg" << std::endl;}, v1, v2);
+    visit(test_2{}, v1, v2);
+    // visit([](const auto& arg1,const auto& arg2){std::cout << "2xarg" << std::endl;}, v1, v2);
 
-    // std::visit(&test_3, v1);
+    // visit(&test_3, v1);
 
     v1 = 78;
 
-    auto hv = std::hash<variant>{};
+    auto hv = std::hash<test>{};
     std::cout << hv(v1) << std::endl;
 
     auto hb = std::hash<bool>{};
@@ -132,26 +140,26 @@ int main()
 
     std::allocator<char> a1;
 
-    variant v3{std::allocator_arg_t{}, a1, std::string{"ABCDEFG"}};
-    std::visit([](const auto& arg){std::cout << arg << std::endl;}, v3);
+    test v3{std::allocator_arg_t{}, a1, std::string{"ABCDEFG"}};
+    // visit([](const auto& arg){std::cout << arg << std::endl;}, v3);
 
-    variant v4{std::allocator_arg_t{}, a1, std::string{"HIJKLM"}};
-    std::visit([](const auto& arg){std::cout << arg << std::endl;}, v4);
+    test v4{std::allocator_arg_t{}, a1, std::string{"HIJKLM"}};
+    // visit([](const auto& arg){std::cout << arg << std::endl;}, v4);
 
-    constexpr std::variant<bool,int,double> v5{};
+    constexpr variant<bool,int,double> v5{};
 
-    constexpr std::variant<bool,int,double> v6{1};
+    constexpr variant<bool,int,double> v6{1};
 
-    std::variant<bool,int,double,std::string> v7{true};
+    variant<bool,int,double,std::string> v7{true};
 
-    variant v10{std::string{"ABCDEFG"}};
-    variant v11{v10};
+    test v10{std::string{"ABCDEFG"}};
+    test v11{v10};
 
-    variant v12{std::allocator_arg_t{}, a1, v11};
-    std::visit([](const auto& arg){std::cout << arg << std::endl;}, v3);
+    test v12{std::allocator_arg_t{}, a1, v11};
+    // visit([](const auto& arg){std::cout << arg << std::endl;}, v12);
 
-    variant v13{std::allocator_arg_t{}, a1, std::in_place<std::string>, "HIJKLM"};
-    std::visit([](const auto& arg){std::cout << arg << std::endl;}, v4);
+    test v13{std::allocator_arg_t{}, a1, std::in_place<std::string>, "HIJKLM"};
+    // visit([](const auto& arg){std::cout << arg << std::endl;}, v13);
 
     return 0;
 }

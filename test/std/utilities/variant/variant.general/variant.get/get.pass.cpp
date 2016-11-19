@@ -1,10 +1,10 @@
-#include <variant>
+#include <experimental/variant>
 #include <string>
 #include <cassert>
 
-using std::variant;
-using std::get;
-using std::get_if;
+using std::experimental::variant;
+using std::experimental::get;
+using std::experimental::get_if;
 
 void test_constexpr_get()
 {
@@ -71,7 +71,7 @@ void test_constexpr_get_if()
 
 void test_get()
 {
-    using test = std::variant<bool,int,double,std::string>;
+    using test = variant<bool,int,double,std::string>;
 
     test t1{false};
     get<0>(t1) = true;
@@ -87,7 +87,7 @@ void test_get()
 
 void test_get_if()
 {
-    using test = std::variant<bool,int,double,std::string>;
+    using test = variant<bool,int,double,std::string>;
 
     test t1{false};
     *get_if<0>(&t1) = true;

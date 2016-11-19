@@ -1,9 +1,10 @@
-#include <variant>
+#include <experimental/variant>
 #include <string>
 #include <vector>
 
-using std::variant;
-using std::monostate;
+using std::experimental::variant;
+using std::experimental::monostate;
+using std::experimental::holds_alternative;
 
 struct foo
 {
@@ -17,7 +18,7 @@ struct foo
 int main()
 {
     variant<monostate,foo> v;
-    assert(std::holds_alternative<monostate>(v));
+    assert(holds_alternative<monostate>(v));
     v.emplace<foo>(true);
-    assert(std::holds_alternative<foo>(v));
+    assert(holds_alternative<foo>(v));
 }

@@ -1,8 +1,11 @@
-#include<variant>
+#include<experimental/variant>
 #include<string>
 #include <iostream>
 
-using test = std::variant<bool,int,double,std::string>;
+using std::experimental::variant;
+using std::experimental::visit;
+
+using test = variant<bool,int,double,std::string>;
 
 struct visitor
 {
@@ -39,19 +42,19 @@ void test_functor()
     test var1, var2, var3;
 
     var1 = var2 = var3 = true;
-    std::visit(vis, var1, var2, var3);
+    visit(vis, var1, var2, var3);
     assert(vis.call == "bool");
 
     var1 = var2 = var3 = 13;
-    std::visit(vis, var1, var2, var3);
+    visit(vis, var1, var2, var3);
     assert(vis.call == "int");
 
     var1 = var2 = var3 = 21.12;
-    std::visit(vis, var1, var2, var3);
+    visit(vis, var1, var2, var3);
     assert(vis.call == "double");
 
     var1 = var2 = var3 = std::string{};
-    std::visit(vis, var1, var2, var3);
+    visit(vis, var1, var2, var3);
     assert(vis.call == "string");
 }
 
@@ -61,19 +64,19 @@ void test_lambda()
     test var1, var2;
 
     var1 = var2 = true;
-    std::visit([&call](const auto& arg1,const auto& arg2){call += "x";std::cout << arg1 << "\n";}, var1, var2);
+    visit([&call](const auto& arg1,const auto& arg2){call += "x";std::cout << arg1 << "\n";}, var1, var2);
     assert(call == "x");
 
     var1 = var2 = 13;
-    std::visit([&call](const auto& arg1,const auto& arg2){call += "x";std::cout << arg1 << "\n";}, var1, var2);
+    visit([&call](const auto& arg1,const auto& arg2){call += "x";std::cout << arg1 << "\n";}, var1, var2);
     assert(call == "xx");
 
     var1 = var2 = 21.12;
-    std::visit([&call](const auto& arg1,const auto& arg2){call += "x";std::cout << arg1 << "\n";}, var1, var2);
+    visit([&call](const auto& arg1,const auto& arg2){call += "x";std::cout << arg1 << "\n";}, var1, var2);
     assert(call == "xxx");
 
     var1 = var2 = std::string{"Hello!"};
-    std::visit([&call](const auto& arg1,const auto& arg2){call += "x";std::cout << arg1 << "\n";}, var1, var2);
+    visit([&call](const auto& arg1,const auto& arg2){call += "x";std::cout << arg1 << "\n";}, var1, var2);
     assert(call == "xxxx");
 }
 

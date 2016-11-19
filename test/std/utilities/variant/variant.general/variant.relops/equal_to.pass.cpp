@@ -1,11 +1,11 @@
-#include <variant>
+#include <experimental/variant>
 #include <cassert>
 
-using std::variant;
+using std::experimental::variant;
 
 void test_comple_time_equal_to()
 {
-    using test = std::variant<bool,int,double>;
+    using test = variant<bool,int,double>;
     constexpr test t1{1};
     constexpr test t2{1};
     constexpr test t3{true};

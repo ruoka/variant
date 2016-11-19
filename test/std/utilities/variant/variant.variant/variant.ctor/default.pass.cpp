@@ -1,7 +1,8 @@
-#include <variant>
+#include <experimental/variant>
 #include <cassert>
 
-using std::variant;
+using std::experimental::variant;
+using std::experimental::holds_alternative;
 
 struct foo
 {
@@ -40,11 +41,11 @@ void test_constructors()
 {
     constexpr variant<foo,int,bool,double> v1;
     static_assert(v1.index() == 0);
-    static_assert(std::holds_alternative<foo>(v1));
+    static_assert(holds_alternative<foo>(v1));
 
     constexpr variant<int,foo,bar,bool,double> v2;
     static_assert(v2.index() == 0);
-    static_assert(std::holds_alternative<int>(v2));
+    static_assert(holds_alternative<int>(v2));
 }
 
 int main()
