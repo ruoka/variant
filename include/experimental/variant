@@ -141,8 +141,7 @@ union __variant_storage<Type,__trivial>
 {
     Type m_type;
 
-    constexpr __variant_storage() : m_type{}
-    {}
+    constexpr __variant_storage() = default;
 
     template<class... Args>
     constexpr __variant_storage(in_place_type_t<Type>, Args&&... args) :
@@ -155,26 +154,20 @@ union __variant_storage<Type,__non_trivial>
 {
     aligned_storage_t<sizeof(Type), alignof(Type)> m_storage;
 
-    constexpr __variant_storage() : m_storage{}
-    {}
+    constexpr __variant_storage() = default;
 
     template<class... Args>
     __variant_storage(in_place_type_t<Type>, Args&&... args) :
         m_storage{}
     {
-        new(&m_storage) Type(forward<Args>(args)...);
+        new(&m_storage)Type(forward<Args>(args)...);
     }
 };
 
 template <>
 union __variant_storage<void,__trivial>
 {
-    constexpr __variant_storage()
-    {}
-
-    template <class T>
-    constexpr __variant_storage(in_place_type_t<T>)
-    {}
+    constexpr __variant_storage() = default;
 };
 
 template <class Type>
@@ -184,14 +177,14 @@ union __variant_storage<Type>
 
     __variant_storage<Type, conditional_t<trivial, __trivial, __non_trivial>> m_head;
 
-    constexpr __variant_storage() : m_head{}
-    {}
+    constexpr __variant_storage() = default;
 
     template <class T,
               class... Args,
               enable_if_t<is_same_v<T,Type>, bool> = true
               >
-    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) : m_head{in_place<T>, forward<Args>(args)...}
+    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
+        m_head{in_place<T>, forward<Args>(args)...}
     {}
 
     template <class T, enable_if_t<is_same_v<T,Type> && trivial, bool> = true>
@@ -228,21 +221,22 @@ union __variant_storage
 
     __variant_storage<Types...> m_tail;
 
-    __variant_storage()
-    {}
+    __variant_storage() = default;
 
     template <class T,
               class... Args,
               enable_if_t<is_same_v<T,Type>, bool> = true
               >
-    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) : m_head{in_place<T>, forward<Args>(args)...}
+    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
+        m_head{in_place<T>, forward<Args>(args)...}
     {}
 
     template <class T,
               class... Args,
               enable_if_t<!is_same_v<T,Type>, bool> = true
               >
-    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) : m_tail{in_place<T>, forward<Args>(args)...}
+    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
+        m_tail{in_place<T>, forward<Args>(args)...}
     {}
 
     template <class T, enable_if_t<is_same_v<T,Type> && trivial, bool> = true>
@@ -390,7 +384,8 @@ protected:
     template <class Alloc,
               class T,
               class... Args,
-              enable_if_t<!is_constructible_v<T,allocator_arg_t,const Alloc&,Args...> && !is_constructible_v<T,Args...,const Alloc&>,bool> = true
+              enable_if_t<!is_constructible_v<T,allocator_arg_t,const Alloc&,Args...> &&
+                          !is_constructible_v<T,Args...,const Alloc&>,bool> = true
               >
     void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
     {
@@ -495,8 +490,8 @@ protected:
     void __destroy()
     {
         assert(m_index >= 0 && m_index < sizeof...(Types));
-        using F = void(__variant_base::*)();
-        constexpr F __array[sizeof...(Types)] = {&__variant_base::__private_destroy<Types> ...};
+        using function = void(__variant_base::*)();
+        constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_destroy<Types> ...};
         (this->*__array[m_index])();
     };
 };
@@ -553,8 +548,8 @@ protected:
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
-        using F = void(__variant_base::*)(const __variant_base&);
-        constexpr F __array[sizeof...(Types)] = {&__variant_base::__private_copy<Types> ...};
+        using function = void(__variant_base::*)(const __variant_base&);
+        constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_copy<Types> ...};
         (this->*__array[v.m_index])(v);
     }
 
@@ -587,11 +582,11 @@ protected:
     using __base::m_index;
 
     __variant_base& operator=(__variant_base&& rhs) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...> &&
-                                                         conjunction_v<is_nothrow_move_assignable<Types> ...>)
+                                                             conjunction_v<is_nothrow_move_assignable<Types> ...>)
     {
         static_assert(conjunction_v<is_move_constructible<Types> ...> &&
                       conjunction_v<is_move_assignable   <Types> ...> ,
-        R"(This function shall not participate in overload resolution unless is_move_constructible_- v<Ti> &&
+        R"(This function shall not participate in overload resolution unless is_move_constructible_v<Ti> &&
                                                                              is_move_assignable_v<Ti> is true for all i.)");
         if(!(m_index < 0))
             __destroy();
@@ -657,8 +652,11 @@ protected:
     {
         static_assert(conjunction_v<is_copy_constructible<Types> ...>,
             "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
-        __move(v);
-        v.m_index = -1;
+        if(!(v.m_index < 0))
+        {
+            __move(v);
+            v.m_index = -1;
+        }
     }
 
     __variant_base& operator=(const __variant_base&) = default;
@@ -687,7 +685,8 @@ protected:
     {
         static_assert(conjunction_v<is_move_constructible<Types> ...>,
             "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
-        __copy(v);
+        if(!(v.m_index < 0))
+            __copy(v);
     }
 
     __variant_base& operator=(const __variant_base&) = default;
@@ -939,12 +938,12 @@ constexpr array<__comparison_function_type<Types...>, sizeof...(I)> __make_less_
 }
 
 template <class Visitor, class... Variants>
-using __invoker_function_type = auto(*)(Visitor&&, Variants&&...) -> result_of_t<Visitor(_VSTD_EXPERIMENTAL::variant_alternative_t<0, decay_t<Variants>> ...)>;
+using __invoker_function_type = auto(*)(Visitor&&, Variants&&...) -> result_of_t<Visitor(variant_alternative_t<0, decay_t<Variants>> ...)>;
 
 template <size_t I, class Visitor, class... Variants>
 auto __alternative_invoker(Visitor&& vis, Variants&&... vars)
 {
-    return invoke(forward<Visitor>(vis), _VSTD_EXPERIMENTAL::get<I>(forward<Variants>(vars)) ...);
+    return invoke(forward<Visitor>(vis), get<I>(forward<Variants>(vars)) ...);
 }
 
 template <class Visitor, class... Variants, size_t... I>
@@ -954,10 +953,10 @@ constexpr array<__invoker_function_type<Visitor, Variants...>, sizeof...(I)> __m
 }
 
 template <class Visitor, class... Types, class... Variants>
-auto __variant_invoke(Visitor&& vis, _VSTD_EXPERIMENTAL::variant<Types...>& var, Variants&&... vars)
+auto __variant_invoke(Visitor&& vis, variant<Types...>& var, Variants&&... vars)
 {
-    constexpr auto __array = __make_invoker_array<Visitor, _VSTD_EXPERIMENTAL::variant<Types...>, Variants...>(index_sequence_for<Types...>{});
-    return __array[var.index()](forward<Visitor>(vis), forward<_VSTD_EXPERIMENTAL::variant<Types...>>(var), forward<Variants>(vars) ...);
+    constexpr auto __array = __make_invoker_array<Visitor, variant<Types...>, Variants...>(index_sequence_for<Types...>{});
+    return __array[var.index()](forward<Visitor>(vis), forward<variant<Types...>>(var), forward<Variants>(vars) ...);
 }
 
 template <class... Types>
@@ -1377,31 +1376,31 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 // 20.7.11, hash support
 // template <class T> struct hash;
 template <class... Types>
-struct hash<_VSTD_EXPERIMENTAL::variant<Types...>>
+struct hash<_VSTD_LFTS::variant<Types...>>
 {
     _LIBCPP_INLINE_VISIBILITY
-    size_t operator()(const _VSTD_EXPERIMENTAL::variant<Types...>& v) noexcept
+    size_t operator()(const _VSTD_LFTS::variant<Types...>& v) noexcept
     {
-        constexpr auto hash = _VSTD_EXPERIMENTAL::__make_hash_array<Types...>(index_sequence_for<Types...>{});
+        constexpr auto hash = _VSTD_LFTS::__make_hash_array<Types...>(index_sequence_for<Types...>{});
         return hash[v.index()](v);
     }
 };
 
 template <>
-struct hash<_VSTD_EXPERIMENTAL::monostate>
+struct hash<_VSTD_LFTS::monostate>
 {
     _LIBCPP_INLINE_VISIBILITY
-    size_t operator()(_VSTD_EXPERIMENTAL::monostate) noexcept
+    size_t operator()(_VSTD_LFTS::monostate) noexcept
     {
         return 42;
     }
 };
 
 // 20.7.12, allocator-related traits
-template <class T, class Alloc> struct uses_allocator;
+// template <class T, class Alloc> struct uses_allocator;
 
 template <class... Types, class Alloc>
-struct uses_allocator<_VSTD_EXPERIMENTAL::variant<Types...>, Alloc> : true_type {};
+struct uses_allocator<_VSTD_LFTS::variant<Types...>, Alloc> : true_type {};
 
 _LIBCPP_END_NAMESPACE_STD
 
