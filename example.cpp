@@ -53,12 +53,14 @@ struct test_2
     }
 };
 
-template <typename T>
-void test_3(T t)
-{}
-
-void test_4(bool b)
-{}
+struct test_3
+{
+    template<typename T>
+    void operator()(const T& t)
+    {
+        std::cout << t << std::endl;
+    }
+};
 
 class foo{};
 
@@ -67,29 +69,30 @@ int main()
     auto fd = variant<char*,int,bool,double>{2.1};
     auto fi = variant<bool,foo,double,int>{false};
     auto fs = variant<char,bool,double,std::string>{std::string{}};
-    // auto ss = variant<std::string,std::string>{std::string{}};
+
+    auto ss = variant<std::string,std::string>{};
+    ss.emplace<1>("TEST!");
 
     variant<monostate,void,bool,double> fb{};
     fb.emplace<bool>(true);
 
     using test = variant<bool,int,double,std::string>;
+
     std::cout << variant_size_v<test> << std::endl;
 
     variant_alternative_t<3,test> str = "abc";
     std::cout << str << std::endl;
 
-    test v1{2.0};
+    auto v1 = test{2.0};
     std::cout << v1.index() << std::endl;
     std::cout << get<2>(v1) << std::endl;
-
     std::cout << std::boolalpha << holds_alternative<bool>(v1) << std::endl;
     std::cout << std::boolalpha << holds_alternative<int>(v1) << std::endl;
     std::cout << std::boolalpha << holds_alternative<double>(v1) << std::endl;
 
-    test v2{true};
+    auto v2 = test{true};
     std::cout << v2.index() << std::endl;
     std::cout << get<0>(v2) << std::endl;
-
     std::cout << std::boolalpha << holds_alternative<bool>(v2) << std::endl;
     std::cout << std::boolalpha << holds_alternative<int>(v2) << std::endl;
     std::cout << std::boolalpha << holds_alternative<double>(v2) << std::endl;
@@ -97,7 +100,6 @@ int main()
     std::cout << std::boolalpha << (v1 == v2) << std::endl;
 
     v1 = false;
-
     std::cout << v1.index() << std::endl;
     std::cout << get<0>(v1) << std::endl;
     std::cout << std::boolalpha << holds_alternative<bool>(v1) << std::endl;
@@ -111,16 +113,15 @@ int main()
     visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
     v1 = 1;
     visit(test_1{}, v1);
-    // visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
+    visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
     v1 = 2.2;
     visit(test_1{}, v1);
-    // visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
-
+    visit([](const auto& arg){std::cout << arg << std::endl;}, v1);
     v1 = false;
     visit(test_2{}, v1, v2);
-    // visit([](const auto& arg1,const auto& arg2){std::cout << "2xarg" << std::endl;}, v1, v2);
+    visit([](const auto& arg1,const auto& arg2){std::cout << "2xarg" << std::endl;}, v1, v2);
 
-    // visit(&test_3, v1);
+    visit(test_3{}, v1);
 
     v1 = 78;
 
@@ -133,10 +134,10 @@ int main()
     std::allocator<char> a1;
 
     test v3{std::allocator_arg_t{}, a1, std::string{"ABCDEFG"}};
-    // visit([](const auto& arg){std::cout << arg << std::endl;}, v3);
+    visit([](const auto& arg){std::cout << arg << std::endl;}, v3);
 
     test v4{std::allocator_arg_t{}, a1, std::string{"HIJKLM"}};
-    // visit([](const auto& arg){std::cout << arg << std::endl;}, v4);
+    visit([](const auto& arg){std::cout << arg << std::endl;}, v4);
 
     constexpr variant<bool,int,double> v5{};
 
@@ -148,10 +149,10 @@ int main()
     test v11{v10};
 
     test v12{std::allocator_arg_t{}, a1, v11};
-    // visit([](const auto& arg){std::cout << arg << std::endl;}, v12);
+    visit([](const auto& arg){std::cout << arg << std::endl;}, v12);
 
     test v13{std::allocator_arg_t{}, a1, std::in_place<std::string>, "HIJKLM"};
-    // visit([](const auto& arg){std::cout << arg << std::endl;}, v13);
+    visit([](const auto& arg){std::cout << arg << std::endl;}, v13);
 
     return 0;
 }
