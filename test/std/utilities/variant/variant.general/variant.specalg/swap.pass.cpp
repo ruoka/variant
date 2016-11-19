@@ -1,11 +1,13 @@
 #include <variant>
 #include <cassert>
 
+using std::variant;
+
 struct foo{};
 
 int main()
 {
-    std::variant<float,unsigned,double,char> v1, v2;
+    variant<float,unsigned,double,char> v1, v2;
     v1 = 123456u;
     v2 = 'A';
     assert(std::get<1>(v1) == 123456u);

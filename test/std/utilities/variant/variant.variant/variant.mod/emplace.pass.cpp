@@ -1,5 +1,7 @@
 #include<variant>
 
+using std::variant;
+
 static int count = 0;
 
 struct foo
@@ -10,7 +12,7 @@ struct foo
 
 int main()
 {
-    std::variant<bool,foo> v{};
+    variant<bool,foo> v{};
     assert(count == 0);
     v.emplace<foo>(13);
     assert(count == 1);

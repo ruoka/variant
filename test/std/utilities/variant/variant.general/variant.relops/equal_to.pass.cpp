@@ -1,16 +1,18 @@
 #include <variant>
 #include <cassert>
 
+using std::variant;
+
 void test_comple_time_equal_to()
 {
-    using variant = std::variant<bool,int,double>;
-    constexpr variant v1{1};
-    constexpr variant v2{1};
-    constexpr variant v3{true};
-    static_assert(v1 == v2);
-    static_assert(!(v1 != v2));
-    static_assert(!(v1 == v3));
-    static_assert(v2 != v3);
+    using test = std::variant<bool,int,double>;
+    constexpr test t1{1};
+    constexpr test t2{1};
+    constexpr test t3{true};
+    static_assert(t1 == t2);
+    static_assert(!(t1 != t2));
+    static_assert(!(t1 == t3));
+    static_assert(t2 != t3);
 }
 
 int main()

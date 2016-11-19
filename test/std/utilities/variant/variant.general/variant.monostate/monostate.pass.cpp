@@ -2,6 +2,9 @@
 #include <string>
 #include <vector>
 
+using std::variant;
+using std::monostate;
+
 struct foo
 {
     foo() = delete;
@@ -13,8 +16,8 @@ struct foo
 
 int main()
 {
-    std::variant<std::monostate,foo> v;
-    assert(std::holds_alternative<std::monostate>(v));
+    variant<monostate,foo> v;
+    assert(std::holds_alternative<monostate>(v));
     v.emplace<foo>(true);
     assert(std::holds_alternative<foo>(v));
 }

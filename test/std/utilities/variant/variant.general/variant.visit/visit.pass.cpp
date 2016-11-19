@@ -2,7 +2,7 @@
 #include<string>
 #include <iostream>
 
-using variant = std::variant<bool,int,double,std::string>;
+using test = std::variant<bool,int,double,std::string>;
 
 struct visitor
 {
@@ -36,7 +36,7 @@ struct visitor
 void test_functor()
 {
     visitor vis;
-    variant var1, var2, var3;
+    test var1, var2, var3;
 
     var1 = var2 = var3 = true;
     std::visit(vis, var1, var2, var3);
@@ -58,7 +58,7 @@ void test_functor()
 void test_lambda()
 {
     std::string call;
-    variant var1, var2;
+    test var1, var2;
 
     var1 = var2 = true;
     std::visit([&call](const auto& arg1,const auto& arg2){call += "x";std::cout << arg1 << "\n";}, var1, var2);

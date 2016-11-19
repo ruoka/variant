@@ -2,18 +2,20 @@
 #include <vector>
 #include <cassert>
 
+using std::variant;
+
 int main()
 {
-    using variant = std::variant<bool,int,double>;
-    constexpr variant v1{};
-    static_assert(v1.index() == 0);
+    using test = variant<bool,int,double>;
+    constexpr test t1{};
+    static_assert(t1.index() == 0);
 
-    constexpr variant v2{true};
-    static_assert(v2.index() == 0);
+    constexpr test t2{true};
+    static_assert(t2.index() == 0);
 
-    constexpr variant v3{1};
-    static_assert(v3.index() == 1);
+    constexpr test t3{1};
+    static_assert(t3.index() == 1);
 
-    constexpr variant v4{2.2};
-    static_assert(v4.index() == 2);
+    constexpr test t4{2.2};
+    static_assert(t4.index() == 2);
 }

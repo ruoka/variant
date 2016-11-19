@@ -2,6 +2,8 @@
 #include <string>
 #include <cassert>
 
+using std::variant;
+
 struct foo
 {
     foo() noexcept = default;
@@ -19,23 +21,23 @@ struct bar
 void test_type_traits()
 {
     // Well formed
-    static_assert(std::is_nothrow_constructible_v<std::variant<foo>,foo>);
-    static_assert(std::is_nothrow_constructible_v<std::variant<int,bool,double,foo>,int>);
-    static_assert(std::is_nothrow_constructible_v<std::variant<foo,int,bool,double>,bool>);
+    static_assert(std::is_nothrow_constructible_v<variant<foo>,foo>);
+    static_assert(std::is_nothrow_constructible_v<variant<int,bool,double,foo>,int>);
+    static_assert(std::is_nothrow_constructible_v<variant<foo,int,bool,double>,bool>);
 
-    static_assert(!std::is_nothrow_constructible_v<std::variant<bar>,bar>);
-    static_assert(std::is_nothrow_constructible_v<std::variant<int,bool,double,bar>,double>);
-    static_assert(!std::is_nothrow_constructible_v<std::variant<bar,int,bool,double>,bar>);
+    static_assert(!std::is_nothrow_constructible_v<variant<bar>,bar>);
+    static_assert(std::is_nothrow_constructible_v<variant<int,bool,double,bar>,double>);
+    static_assert(!std::is_nothrow_constructible_v<variant<bar,int,bool,double>,bar>);
 
-    static_assert(std::is_constructible_v<std::variant<std::string,foo>,std::string>);
-    static_assert(std::is_constructible_v<std::variant<std::string,foo>,const std::string&>);
-    static_assert(std::is_constructible_v<std::variant<std::string,foo>,std::string&&>);
-    static_assert(std::is_constructible_v<std::variant<std::string,foo>,char*>);
-    static_assert(std::is_constructible_v<std::variant<std::string,foo>,const char*>);
+    static_assert(std::is_constructible_v<variant<std::string,foo>,std::string>);
+    static_assert(std::is_constructible_v<variant<std::string,foo>,const std::string&>);
+    static_assert(std::is_constructible_v<variant<std::string,foo>,std::string&&>);
+    static_assert(std::is_constructible_v<variant<std::string,foo>,char*>);
+    static_assert(std::is_constructible_v<variant<std::string,foo>,const char*>);
 
     // Ill formed
-    static_assert(!std::is_nothrow_constructible_v<std::variant<bool,bool>,bool>);
-    static_assert(!std::is_nothrow_constructible_v<std::variant<std::string,std::string>,const char*>);
+    static_assert(!std::is_nothrow_constructible_v<variant<bool,bool>,bool>);
+    static_assert(!std::is_nothrow_constructible_v<variant<std::string,std::string>,const char*>);
 }
 
 int main()

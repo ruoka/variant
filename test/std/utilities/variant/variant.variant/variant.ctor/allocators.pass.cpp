@@ -3,6 +3,8 @@
 #include <string>
 #include <cassert>
 
+using std::variant;
+
 struct foo
 {
     foo(const foo&) = default;
@@ -19,21 +21,21 @@ struct bar
 void test_type_traits()
 {
     // Default
-    static_assert(std::is_constructible_v<std::variant<int,foo>,  std::allocator_arg_t, std::allocator<char>, foo>);
-    static_assert(!std::is_constructible_v<std::variant<int,bar>, std::allocator_arg_t, std::allocator<char>, bar>);
+    static_assert(std::is_constructible_v<variant<int,foo>,  std::allocator_arg_t, std::allocator<char>, foo>);
+    static_assert(!std::is_constructible_v<variant<int,bar>, std::allocator_arg_t, std::allocator<char>, bar>);
 
     // Copy
-    static_assert(std::is_constructible_v<std::variant<int,foo>,  std::allocator_arg_t, std::allocator<char>, std::variant<int,foo>&>);
-    static_assert(!std::is_constructible_v<std::variant<int,bar>, std::allocator_arg_t, std::allocator<char>, std::variant<int,bar>&>);
+    static_assert(std::is_constructible_v<variant<int,foo>,  std::allocator_arg_t, std::allocator<char>, variant<int,foo>&>);
+    static_assert(!std::is_constructible_v<variant<int,bar>, std::allocator_arg_t, std::allocator<char>, variant<int,bar>&>);
 
     // Move
-    static_assert(std::is_constructible_v<std::variant<int,foo>,  std::allocator_arg_t, std::allocator<char>, std::variant<int,foo>&&>);
-    static_assert(!std::is_constructible_v<std::variant<int,bar>, std::allocator_arg_t, const std::allocator<char>&, std::variant<int,bar>&&>);
+    static_assert(std::is_constructible_v<variant<int,foo>,  std::allocator_arg_t, std::allocator<char>, variant<int,foo>&&>);
+    static_assert(!std::is_constructible_v<variant<int,bar>, std::allocator_arg_t, const std::allocator<char>&, variant<int,bar>&&>);
 }
 
 void test_constructors()
 {
-    using variant = std::variant<bool,int,double,std::vector<int>,std::string>;
+    using variant = variant<bool,int,double,std::vector<int>,std::string>;
     std::allocator<char> a;
 
     variant v1{std::allocator_arg_t{}, a};

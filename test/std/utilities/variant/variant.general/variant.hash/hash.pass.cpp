@@ -1,16 +1,18 @@
 #include <variant>
 #include <cassert>
 
+using std::variant;
+
 struct foo{};
 
 int main()
 {
-    std::hash<std::variant<unsigned,double,char>> hv;
+    std::hash<variant<unsigned,double,char>> hv;
     std::hash<unsigned> hu;
     std::hash<double> hd;
     std::hash<char> hc;
 
-    std::variant<unsigned,double,char> v;
+    variant<unsigned,double,char> v;
 
     v = 123u;
     assert(hv(v) == hu(123u));

@@ -1,5 +1,7 @@
 #include<variant>
 
+using std::variant;
+
 static int count = 0;
 
 struct foo
@@ -15,13 +17,13 @@ struct bar
 
 int main()
 {
-    static_assert(std::is_trivially_destructible_v<std::variant<int,foo>> == true);
+    static_assert(std::is_trivially_destructible_v<variant<int,foo>> == true);
 
-    static_assert(std::is_trivially_destructible_v<std::variant<int,bar>> == false);
+    static_assert(std::is_trivially_destructible_v<variant<int,bar>> == false);
 
     assert(count == 0);
     {
-        std::variant<bar> v{std::in_place<bar>};
+        variant<bar> v{std::in_place<bar>};
         assert(count == 1);
     }
     assert(count == 2);

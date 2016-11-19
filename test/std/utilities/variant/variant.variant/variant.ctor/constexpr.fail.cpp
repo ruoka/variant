@@ -2,8 +2,9 @@
 #include <vector>
 #include <cassert>
 
+using std::variant;
+
 int main()
 {
-    // using variant = std::variant<bool,int,double,std::vector<int>>;
-    // constexpr variant v1{};
+    // constexpr variant<bool,int,double,std::vector<int>> v1{};
 }

@@ -1,24 +1,36 @@
 #include <variant>
 #include <cassert>
 
-void test_constexpr()
+using std::variant;
+
+void test_ctor()
 {
-    using variant = std::variant<bool,int,double>;
+    using test = variant<bool,int,double>;
+    constexpr test t1{};
+    static_assert(t1.index() == 0);
+    constexpr test t2{true};
+    static_assert(t2.index() == 0);
+    constexpr test t3{1};
+    static_assert(t3.index() == 1);
+    constexpr test t4{2.2};
+    static_assert(t4.index() == 2);
+}
 
-    constexpr variant v1{};
-    static_assert(v1.index() == 0);
-
-    constexpr variant v2{true};
-    static_assert(v2.index() == 0);
-
-    constexpr variant v3{1};
-    static_assert(v3.index() == 1);
-
-    constexpr variant v4{2.2};
-    static_assert(v4.index() == 2);
+void test_assign()
+{
+    using test = variant<bool,int,double>;
+    test t1{};
+    assert(t1.index() == 0);
+    t1 = true;
+    assert(t1.index() == 0);
+    t1 = 1;
+    assert(t1.index() == 1);
+    t1 = 2.2;
+    assert(t1.index() == 2);
 }
 
 int main()
 {
-    test_constexpr();
+    test_ctor();
+    test_assign();
 }
