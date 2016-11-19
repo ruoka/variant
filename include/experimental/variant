@@ -120,8 +120,9 @@ namespace std {
 */
 
 #include <experimental/__config>
-#include <functional>
+#include <tuple>
 #include <array>
+#include <functional>
 #include <cassert>
 
 _LIBCPP_BEGIN_NAMESPACE_LFTS
@@ -129,66 +130,68 @@ _LIBCPP_BEGIN_NAMESPACE_LFTS
 #if _LIBCPP_STD_VER > 14
 
 template <class Type, class... Types>
-union __storage; // undefined
+union __variant_storage; // undefined
 
 struct __trivial{};
 
 struct __non_trivial{};
 
 template <class Type>
-union __storage<Type,__trivial>
+union __variant_storage<Type,__trivial>
 {
     Type m_type;
 
-    constexpr __storage() : m_type{}
+    constexpr __variant_storage() : m_type{}
     {}
 
     template<class... Args>
-    constexpr __storage(in_place_type_t<Type>, Args&&... args) : m_type{forward<Args>(args)...}
+    constexpr __variant_storage(in_place_type_t<Type>, Args&&... args) :
+        m_type{forward<Args>(args)...}
     {}
 };
 
 template <class Type>
-union __storage<Type,__non_trivial>
+union __variant_storage<Type,__non_trivial>
 {
     aligned_storage_t<sizeof(Type), alignof(Type)> m_storage;
 
-    constexpr __storage() : m_storage{}
+    constexpr __variant_storage() : m_storage{}
     {}
 
     template<class... Args>
-    __storage(in_place_type_t<Type>, Args&&... args) : m_storage{}
+    __variant_storage(in_place_type_t<Type>, Args&&... args) :
+        m_storage{}
     {
         new(&m_storage) Type(forward<Args>(args)...);
     }
 };
 
 template <>
-union __storage<void,__trivial>
+union __variant_storage<void,__trivial>
 {
-    constexpr __storage()
+    constexpr __variant_storage()
     {}
 
     template <class T>
-    constexpr __storage(in_place_type_t<T>)
+    constexpr __variant_storage(in_place_type_t<T>)
     {}
 };
 
 template <class Type>
-union __storage<Type>
+union __variant_storage<Type>
 {
     static constexpr bool trivial = is_trivially_destructible_v<Type> || is_same_v<Type,void>;
 
-    __storage<Type, conditional_t<trivial, __trivial, __non_trivial>> m_head;
+    __variant_storage<Type, conditional_t<trivial, __trivial, __non_trivial>> m_head;
 
-    constexpr __storage() : m_head{}
+    constexpr __variant_storage() : m_head{}
     {}
 
     template <class T,
               class... Args,
               enable_if_t<is_same_v<T,Type>, bool> = true
               >
-    constexpr __storage(in_place_type_t<T>, Args&&... args) : m_head{in_place<T>, forward<Args>(args)...}
+    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) : m_head{in_place<T>, forward<Args>(args)...}
     {}
 
     template <class T, enable_if_t<is_same_v<T,Type> && trivial, bool> = true>
@@ -217,29 +220,29 @@ union __storage<Type>
 };
 
 template <class Type, class... Types>
-union __storage
+union __variant_storage
 {
     static constexpr bool trivial = is_trivially_destructible_v<Type> || is_same_v<Type,void>;
 
-    __storage<Type, conditional_t<trivial, __trivial, __non_trivial>> m_head;
+    __variant_storage<Type, conditional_t<trivial, __trivial, __non_trivial>> m_head;
 
-    __storage<Types...> m_tail;
+    __variant_storage<Types...> m_tail;
 
-    __storage()
+    __variant_storage()
     {}
 
     template <class T,
               class... Args,
               enable_if_t<is_same_v<T,Type>, bool> = true
               >
-    constexpr __storage(in_place_type_t<T>, Args&&... args) : m_head{in_place<T>, forward<Args>(args)...}
+    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) : m_head{in_place<T>, forward<Args>(args)...}
     {}
 
     template <class T,
               class... Args,
               enable_if_t<!is_same_v<T,Type>, bool> = true
               >
-    constexpr __storage(in_place_type_t<T>, Args&&... args) : m_tail{in_place<T>, forward<Args>(args)...}
+    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) : m_tail{in_place<T>, forward<Args>(args)...}
     {}
 
     template <class T, enable_if_t<is_same_v<T,Type> && trivial, bool> = true>
@@ -280,19 +283,19 @@ union __storage
 };
 
 template <class T, class... Types>
-struct __index; // undefined
+struct __variant_index; // undefined
 
 template <class T, class... Types>
-constexpr size_t __index_v = __index<T, Types...>::value;
+constexpr size_t __variant_index_v = __variant_index<T, Types...>::value;
 
 template <class T>
-struct __index<T> : integral_constant<size_t, 1> {};
+struct __variant_index<T> : integral_constant<size_t, 1> {};
 
 template <class T, class... Types>
-struct __index<T, T, Types...> : integral_constant<size_t, 0> {};
+struct __variant_index<T, T, Types...> : integral_constant<size_t, 0> {};
 
 template <class T, class U, class... Types>
-struct __index<T, U, Types...> : integral_constant<size_t, 1 + __index_v<T, Types...>> {};
+struct __variant_index<T, U, Types...> : integral_constant<size_t, 1 + __variant_index_v<T, Types...>> {};
 
 // Variant Base Class
 
@@ -302,33 +305,33 @@ template <bool CopyConstructible,
           bool MoveAssignable,
           bool TiviallyDestructible,
           class... Types>
-class __variant_storage; // undefined
+class __variant_base; // undefined
 
 // NonTiviallyDestructible Specialisation
 
 template <class... Types>
-class __variant_storage<false,false,false,false,false,Types...>
+class __variant_base<false,false,false,false,false,Types...>
 {
 public:
 
-    __storage<Types...> m_storage;
+    __variant_storage<Types...> m_storage;
 
 protected:
 
     ptrdiff_t m_index = -1;
 
-    __variant_storage(const __variant_storage&) = delete;
-    __variant_storage(__variant_storage&&) = delete;
-    __variant_storage& operator=(const __variant_storage&) = delete;
-    __variant_storage& operator=(__variant_storage&&) = delete;
+    __variant_base(const __variant_base&) = delete;
+    __variant_base(__variant_base&&) = delete;
+    __variant_base& operator=(const __variant_base&) = delete;
+    __variant_base& operator=(__variant_base&&) = delete;
 
-    __variant_storage() :
+    __variant_base() :
         m_storage{},
         m_index{-1}
     {}
 
     template <class T, class... Args>
-    __variant_storage(in_place_type_t<T>, Args&&... args) :
+    __variant_base(in_place_type_t<T>, Args&&... args) :
         m_storage{},
         m_index{-1}
     {
@@ -336,14 +339,14 @@ protected:
     }
 
     template <class Alloc, class T, class... Args>
-    __variant_storage(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
+    __variant_base(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
         m_storage{},
         m_index{-1}
     {
         __construct(allocator_arg_t{}, a, in_place<T>, forward<Args>(args) ...);
     }
 
-    ~__variant_storage()
+    ~__variant_base()
     {
         if(m_index >= 0)
             __destroy();
@@ -357,7 +360,7 @@ protected:
     {
         assert(m_index < 0);
         new(&m_storage) T{forward<Args>(args) ...};
-        m_index = __index_v<T, Types...>;
+        m_index = __variant_index_v<T, Types...>;
     };
 
     template <class Alloc,
@@ -369,7 +372,7 @@ protected:
     {
         assert(m_index < 0);
         new(&m_storage) T{allocator_arg_t{}, a, forward<Args>(args) ...};
-        m_index = __index_v<T, Types...>;
+        m_index = __variant_index_v<T, Types...>;
     };
 
     template <class Alloc,
@@ -381,7 +384,7 @@ protected:
     {
         assert(m_index < 0);
         new(&m_storage) T{forward<Args>(args) ..., a};
-        m_index = __index_v<T, Types...>;
+        m_index = __variant_index_v<T, Types...>;
     };
 
     template <class Alloc,
@@ -393,13 +396,13 @@ protected:
     {
         assert(m_index < 0);
         new(&m_storage) T{forward<Args>(args) ...};
-        m_index = __index_v<T, Types...>;
+        m_index = __variant_index_v<T, Types...>;
     };
 
 private:
 
     template<class T>
-    void __private_copy(const __variant_storage& v)
+    void __private_copy(const __variant_base& v)
     {
         __construct(in_place<T>, v.m_storage.template get<T>());
     }
@@ -407,36 +410,36 @@ private:
     template <class Alloc,
               class T
               >
-    void __private_copy(allocator_arg_t, const Alloc& a, const __variant_storage& v)
+    void __private_copy(allocator_arg_t, const Alloc& a, const __variant_base& v)
     {
         __construct(allocator_arg_t{}, a, in_place<T>, v.m_storage.template get<T>());
     }
 
 protected:
 
-    void __copy(const __variant_storage& v)
+    void __copy(const __variant_base& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
-        using function = void(__variant_storage::*)(const __variant_storage&);
-        constexpr function __array[sizeof...(Types)] = {&__variant_storage::__private_copy<Types> ...};
+        using function = void(__variant_base::*)(const __variant_base&);
+        constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_copy<Types> ...};
         (this->*__array[v.m_index])(v);
     }
 
     template <class Alloc>
-    void __copy(allocator_arg_t, const Alloc& a, const __variant_storage& v)
+    void __copy(allocator_arg_t, const Alloc& a, const __variant_base& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
-        using function = void(__variant_storage::*)(allocator_arg_t, const Alloc&, const __variant_storage&);
-        constexpr function __array[sizeof...(Types)] = {&__variant_storage::__private_copy<Alloc,Types> ...};
+        using function = void(__variant_base::*)(allocator_arg_t, const Alloc&, const __variant_base&);
+        constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_copy<Alloc,Types> ...};
         (this->*__array[v.m_index])(allocator_arg_t{}, a, v);
     }
 
 private:
 
     template<class T>
-    void __private_move(__variant_storage&& v)
+    void __private_move(__variant_base&& v)
     {
         __construct(in_place<T>, move(v.m_storage.template get<T>()));
     }
@@ -444,30 +447,30 @@ private:
     template <class Alloc,
               class T
               >
-    void __private_move(allocator_arg_t, const Alloc& a, __variant_storage&& v)
+    void __private_move(allocator_arg_t, const Alloc& a, __variant_base&& v)
     {
         __construct(allocator_arg_t{}, a, in_place<T>, move(v.m_storage.template get<T>()));
     }
 
 protected:
 
-    void __move(__variant_storage&& v)
+    void __move(__variant_base&& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
-        using function = void(__variant_storage::*)(__variant_storage&&);
-        constexpr function __array[sizeof...(Types)] = {&__variant_storage::__private_move<Types> ...};
-        (this->*__array[v.m_index])(forward<__variant_storage>(v));
+        using function = void(__variant_base::*)(__variant_base&&);
+        constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_move<Types> ...};
+        (this->*__array[v.m_index])(forward<__variant_base>(v));
     }
 
     template <class Alloc>
-    void __move(allocator_arg_t, const Alloc& a, __variant_storage&& v)
+    void __move(allocator_arg_t, const Alloc& a, __variant_base&& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
-        using function = void(__variant_storage::*)(allocator_arg_t, const Alloc&, __variant_storage&&);
-        constexpr function __array[sizeof...(Types)] = {&__variant_storage::__private_move<Alloc,Types> ...};
-        (this->*__array[v.m_index])(allocator_arg_t{}, a, forward<__variant_storage>(v));
+        using function = void(__variant_base::*)(allocator_arg_t, const Alloc&, __variant_base&&);
+        constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_move<Alloc,Types> ...};
+        (this->*__array[v.m_index])(allocator_arg_t{}, a, forward<__variant_base>(v));
     }
 
 private:
@@ -492,8 +495,8 @@ protected:
     void __destroy()
     {
         assert(m_index >= 0 && m_index < sizeof...(Types));
-        using F = void(__variant_storage::*)();
-        constexpr F __array[sizeof...(Types)] = {&__variant_storage::__private_destroy<Types> ...};
+        using F = void(__variant_base::*)();
+        constexpr F __array[sizeof...(Types)] = {&__variant_base::__private_destroy<Types> ...};
         (this->*__array[m_index])();
     };
 };
@@ -501,31 +504,31 @@ protected:
 // TiviallyDestructible Specialisation
 
 template <class... Types>
-class __variant_storage<false,false,false,false,true,Types...>
+class __variant_base<false,false,false,false,true,Types...>
 {
 public:
 
-    __storage<Types...> m_storage;
+    __variant_storage<Types...> m_storage;
 
 protected:
 
     ptrdiff_t m_index = -1;
 
-    __variant_storage(const __variant_storage&) = delete;
-    __variant_storage(__variant_storage&&) = delete;
-    __variant_storage& operator=(const __variant_storage&) = delete;
-    __variant_storage& operator=(__variant_storage&&) = delete;
-    ~__variant_storage() = default;
+    __variant_base(const __variant_base&) = delete;
+    __variant_base(__variant_base&&) = delete;
+    __variant_base& operator=(const __variant_base&) = delete;
+    __variant_base& operator=(__variant_base&&) = delete;
+    ~__variant_base() = default;
 
-    __variant_storage() :
+    __variant_base() :
         m_storage{},
         m_index{-1}
     {}
 
     template <class T, class... Args>
-    constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
+    constexpr __variant_base(in_place_type_t<T>, Args&&... args) :
         m_storage{in_place<T>, forward<Args>(args) ...},
-        m_index{__index_v<T, Types...>}
+        m_index{__variant_index_v<T, Types...>}
     {}
 
     template <class T, class... Args>
@@ -533,29 +536,29 @@ protected:
     {
         assert(m_index < 0);
         new(&m_storage) remove_reference_t<T>{forward<Args>(args) ...};
-        m_index = __index_v<T, Types...>;
+        m_index = __variant_index_v<T, Types...>;
     };
 
 private:
 
     template<class T>
-    void __private_copy(const __variant_storage& v)
+    void __private_copy(const __variant_base& v)
     {
         __construct(in_place<T>, v.m_storage.template get<T>());
     }
 
 protected:
 
-    void __copy(const __variant_storage& v)
+    void __copy(const __variant_base& v)
     {
         assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
         assert(m_index < 0);
-        using F = void(__variant_storage::*)(const __variant_storage&);
-        constexpr F __array[sizeof...(Types)] = {&__variant_storage::__private_copy<Types> ...};
+        using F = void(__variant_base::*)(const __variant_base&);
+        constexpr F __array[sizeof...(Types)] = {&__variant_base::__private_copy<Types> ...};
         (this->*__array[v.m_index])(v);
     }
 
-    void __move(__variant_storage&& v)
+    void __move(__variant_base&& v)
     {
         __copy(v);
     }
@@ -571,10 +574,10 @@ protected:
 
 template <bool TiviallyDestructible,
           class... Types>
-class __variant_storage<false,false,false,true,TiviallyDestructible,Types...> :
-public __variant_storage<false,false,false,false,TiviallyDestructible,Types...>
+class __variant_base<false,false,false,true,TiviallyDestructible,Types...> :
+public __variant_base<false,false,false,false,TiviallyDestructible,Types...>
 {
-    using __base = __variant_storage<false,false,false,false,TiviallyDestructible,Types...>;
+    using __base = __variant_base<false,false,false,false,TiviallyDestructible,Types...>;
     using __base::__base;
 
 protected:
@@ -583,7 +586,7 @@ protected:
     using __base::__destroy;
     using __base::m_index;
 
-    __variant_storage& operator=(__variant_storage&& rhs) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...> &&
+    __variant_base& operator=(__variant_base&& rhs) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...> &&
                                                          conjunction_v<is_nothrow_move_assignable<Types> ...>)
     {
         static_assert(conjunction_v<is_move_constructible<Types> ...> &&
@@ -603,10 +606,10 @@ protected:
 template <bool MoveAssignable,
           bool TiviallyDestructible,
           class... Types>
-class __variant_storage<false,false,true,MoveAssignable,TiviallyDestructible,Types...> :
-public __variant_storage<false,false,false,MoveAssignable,TiviallyDestructible,Types...>
+class __variant_base<false,false,true,MoveAssignable,TiviallyDestructible,Types...> :
+public __variant_base<false,false,false,MoveAssignable,TiviallyDestructible,Types...>
 {
-    using __base = __variant_storage<false,false,false,MoveAssignable,TiviallyDestructible,Types...>;
+    using __base = __variant_base<false,false,false,MoveAssignable,TiviallyDestructible,Types...>;
     using __base::__base;
 
 protected:
@@ -615,7 +618,7 @@ protected:
     using __base::__destroy;
     using __base::m_index;
 
-    __variant_storage& operator=(const __variant_storage& rhs)
+    __variant_base& operator=(const __variant_base& rhs)
     {
         static_assert(conjunction_v<is_copy_constructible<Types> ...> &&
                       conjunction_v<is_move_constructible<Types> ...> &&
@@ -630,7 +633,7 @@ protected:
         return *this;
     }
 
-    __variant_storage& operator=(__variant_storage&&) = default;
+    __variant_base& operator=(__variant_base&&) = default;
 };
 
 // MoveConstructible Specialisation
@@ -639,17 +642,17 @@ template <bool CopyAssignable,
           bool MoveAssignable,
           bool TiviallyDestructible,
           class... Types>
-class __variant_storage<false,true,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...> :
-public __variant_storage<false,false,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>
+class __variant_base<false,true,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...> :
+public __variant_base<false,false,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>
 {
-    using __base = __variant_storage<false,false,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>;
+    using __base = __variant_base<false,false,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>;
     using __base::__base;
 
 protected:
 
     using __base::__move;
 
-    __variant_storage(__variant_storage&& v) :
+    __variant_base(__variant_base&& v) :
         __base{}
     {
         static_assert(conjunction_v<is_copy_constructible<Types> ...>,
@@ -658,8 +661,8 @@ protected:
         v.m_index = -1;
     }
 
-    __variant_storage& operator=(const __variant_storage&) = default;
-    __variant_storage& operator=(__variant_storage&&) = default;
+    __variant_base& operator=(const __variant_base&) = default;
+    __variant_base& operator=(__variant_base&&) = default;
 };
 
 // CopyConstructible Specialisation
@@ -669,17 +672,17 @@ template <bool MoveConstructible,
           bool MoveAssignable,
           bool TiviallyDestructible,
           class... Types>
-class __variant_storage<true,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...> :
-public __variant_storage<false,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>
+class __variant_base<true,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...> :
+public __variant_base<false,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>
 {
-    using __base = __variant_storage<false,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>;
+    using __base = __variant_base<false,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>;
     using __base::__base;
 
 protected:
 
     using __base::__copy;
 
-    __variant_storage(const __variant_storage& v) :
+    __variant_base(const __variant_base& v) :
         __base{}
     {
         static_assert(conjunction_v<is_move_constructible<Types> ...>,
@@ -687,8 +690,8 @@ protected:
         __copy(v);
     }
 
-    __variant_storage& operator=(const __variant_storage&) = default;
-    __variant_storage& operator=(__variant_storage&&) = default;
+    __variant_base& operator=(const __variant_base&) = default;
+    __variant_base& operator=(__variant_base&&) = default;
 };
 
 template < template <class> class Test, class... Types>
@@ -781,20 +784,21 @@ struct variant_alternative<I, variant<Types...>>
 constexpr size_t variant_npos = -1;
 
 // 20.7.10, class bad_variant_access
-class bad_variant_access : logic_error {
+class _LIBCPP_EXCEPTION_ABI bad_variant_access : logic_error {
 public:
     bad_variant_access() : logic_error{"bad variant access"} {};
 };
 
-
 // 20.7.4, value access
 template <class T, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool holds_alternative(const variant<Types...>& v) noexcept
 {
-    return __index_v<T, Types...> == v.index();
+    return __variant_index_v<T, Types...> == v.index();
 };
 
 template <size_t I, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr variant_alternative_t<I, variant<Types...>>&
 get(variant<Types...>& v)
 {
@@ -803,6 +807,7 @@ get(variant<Types...>& v)
 };
 
 template <size_t I, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr variant_alternative_t<I, variant<Types...>>&&
 get(variant<Types...>&& v)
 {
@@ -810,7 +815,26 @@ get(variant<Types...>&& v)
     return move(get<T>(v));
 };
 
+template <size_t I, class... Types>
+_LIBCPP_INLINE_VISIBILITY
+constexpr variant_alternative_t<I, variant<Types...>> const&
+get(const variant<Types...>& v)
+{
+    using T = variant_alternative_t<I,variant<Types...>>;
+    return get<T>(v);
+};
+
+template <size_t I, class... Types>
+_LIBCPP_INLINE_VISIBILITY
+constexpr variant_alternative_t<I, variant<Types...>> const&&
+get(const variant<Types...>&& v)
+{
+    using T = variant_alternative_t<I,variant<Types...>>;
+    return move(get<T>(v));
+};
+
 template <class T, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr T&
 get(variant<Types...>& v)
 {
@@ -820,6 +844,7 @@ get(variant<Types...>& v)
 };
 
 template <class T, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr T&&
 get(variant<Types...>&& v)
 {
@@ -829,6 +854,7 @@ get(variant<Types...>&& v)
 };
 
 template <class T, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr const T&
 get(const variant<Types...>& v)
 {
@@ -838,6 +864,7 @@ get(const variant<Types...>& v)
 };
 
 template <class T, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr const T&&
 get(const variant<Types...>&& v)
 {
@@ -847,22 +874,7 @@ get(const variant<Types...>&& v)
 };
 
 template <size_t I, class... Types>
-constexpr variant_alternative_t<I, variant<Types...>> const&
-get(const variant<Types...>& v)
-{
-    using T = variant_alternative_t<I,variant<Types...>>;
-    return get<T>(v);
-};
-
-template <size_t I, class... Types>
-constexpr variant_alternative_t<I, variant<Types...>> const&&
-get(const variant<Types...>&& v)
-{
-    using T = variant_alternative_t<I,variant<Types...>>;
-    return move(get<T>(v));
-};
-
-template <size_t I, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr add_pointer_t<variant_alternative_t<I, variant<Types...>>>
 get_if(variant<Types...>* v) noexcept
 {
@@ -871,6 +883,7 @@ get_if(variant<Types...>* v) noexcept
 };
 
 template <size_t I, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr add_pointer_t<const variant_alternative_t<I, variant<Types...>>>
 get_if(const variant<Types...>* v) noexcept
 {
@@ -879,6 +892,7 @@ get_if(const variant<Types...>* v) noexcept
 };
 
 template <class T, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr add_pointer_t<T>
 get_if(variant<Types...>* v) noexcept
 {
@@ -888,6 +902,7 @@ get_if(variant<Types...>* v) noexcept
 };
 
 template <class T, class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr add_pointer_t<const T>
 get_if(const variant<Types...>* v) noexcept
 {
@@ -939,7 +954,7 @@ constexpr array<__invoker_function_type<Visitor, Variants...>, sizeof...(I)> __m
 }
 
 template <class Visitor, class... Types, class... Variants>
-auto __invoke_alternative(Visitor&& vis, _VSTD_EXPERIMENTAL::variant<Types...>& var, Variants&&... vars)
+auto __variant_invoke(Visitor&& vis, _VSTD_EXPERIMENTAL::variant<Types...>& var, Variants&&... vars)
 {
     constexpr auto __array = __make_invoker_array<Visitor, _VSTD_EXPERIMENTAL::variant<Types...>, Variants...>(index_sequence_for<Types...>{});
     return __array[var.index()](forward<Visitor>(vis), forward<_VSTD_EXPERIMENTAL::variant<Types...>>(var), forward<Variants>(vars) ...);
@@ -978,6 +993,7 @@ constexpr array<__hash_function_type<Types...>, sizeof...(I)> __make_hash_array(
 
 // 20.7.5, relational operators
 template <class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator==(const variant<Types...>& v, const variant<Types...>& w)
 {
     constexpr auto __equal_to = __make_equal_to_array<Types...>(index_sequence_for<Types...>{});
@@ -985,12 +1001,14 @@ constexpr bool operator==(const variant<Types...>& v, const variant<Types...>& w
 };
 
 template <class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator!=(const variant<Types...>& v, const variant<Types...>& w)
 {
     return !(v == w);
 };
 
 template <class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator<(const variant<Types...>& v, const variant<Types...>& w)
 {
     constexpr auto __less = __make_less_array<Types...>(index_sequence_for<Types...>{});
@@ -998,6 +1016,7 @@ constexpr bool operator<(const variant<Types...>& v, const variant<Types...>& w)
 };
 
 template <class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator>(const variant<Types...>& v, const variant<Types...>& w)
 {
     return w < v;
@@ -1010,6 +1029,7 @@ constexpr bool operator<=(const variant<Types...>& v, const variant<Types...>& w
 }
 
 template <class... Types>
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator>=(const variant<Types...>& v, const variant<Types...>& w)
 {
     return !(v < w);
@@ -1017,24 +1037,32 @@ constexpr bool operator>=(const variant<Types...>& v, const variant<Types...>& w
 
 // 20.7.6, visitation
 template <class Visitor, class... Variants>
+_LIBCPP_INLINE_VISIBILITY
 constexpr auto visit(Visitor&& vis, Variants&&... vars)
 {
-    return __invoke_alternative(forward<Visitor>(vis), forward<Variants>(vars) ...);
+    return __variant_invoke(forward<Visitor>(vis), forward<Variants>(vars) ...);
 };
 
 // 20.7.7, class monostate
 struct monostate {};
 
 // 20.7.8, monostate relational operators
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator<(monostate, monostate) noexcept {return false;};
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator>(monostate, monostate) noexcept {return false;};
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator<=(monostate, monostate) noexcept {return true;};
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator>=(monostate, monostate) noexcept {return true;};
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator==(monostate, monostate) noexcept {return true;};
+_LIBCPP_INLINE_VISIBILITY
 constexpr bool operator!=(monostate, monostate) noexcept {return false;};
 
 // 20.7.9, specialized algorithms
 template <class... Types>
+_LIBCPP_INLINE_VISIBILITY
 void swap(variant<Types...>& lhs, variant<Types...>& rhs) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...> &&
                                                                    conjunction_v<is_nothrow_swappable<Types> ...>)
 {
@@ -1042,14 +1070,14 @@ void swap(variant<Types...>& lhs, variant<Types...>& rhs) noexcept(conjunction_v
 };
 
 template <class... Types>
-class variant : public __variant_storage<conjunction_v<is_copy_constructible<Types>...>,
+class variant : public __variant_base<conjunction_v<is_copy_constructible<Types>...>,
                                                    conjunction_v<is_move_constructible<Types>...>,
                                                    conjunction_v<is_copy_assignable<Types>...>,
                                                    conjunction_v<is_move_assignable<Types>...>,
                                                    conjunction_v<is_trivially_destructible<Types>...>,
                                                    Types...>
 {
-    using __base = __variant_storage<conjunction_v<is_copy_constructible<Types>...>,
+    using __base = __variant_base<conjunction_v<is_copy_constructible<Types>...>,
                                                conjunction_v<is_move_constructible<Types>...>,
                                                conjunction_v<is_copy_assignable<Types>...>,
                                                conjunction_v<is_move_assignable<Types>...>,
@@ -1067,6 +1095,7 @@ public:
 
     template <class T0 = variant_alternative_t<0,variant>,
               enable_if_t<is_default_constructible_v<T0>, bool> = true>
+    _LIBCPP_INLINE_VISIBILITY
     constexpr variant() noexcept(is_nothrow_default_constructible_v<T0>) :
         __base{in_place<T0>}
     {
@@ -1077,12 +1106,15 @@ public:
     template <class T0 = variant_alternative_t<0,variant>,
               enable_if_t<!is_default_constructible_v<T0>, bool> = false
               >
+    _LIBCPP_INLINE_VISIBILITY
     constexpr variant() noexcept(is_nothrow_default_constructible_v<T0>) = delete;
 
     // We'll inherit the copy and move constructors from the __base
 
+    _LIBCPP_INLINE_VISIBILITY
     variant(const variant&) = default;
 
+    _LIBCPP_INLINE_VISIBILITY
     variant(variant&&) = default;
 
     template <class T,
@@ -1091,6 +1123,7 @@ public:
               enable_if_t<!is_same_v<decay_t<T>,variant>,bool> = false,
               enable_if_t<is_constructible_v<Tj,T>,bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     constexpr variant(T&& t) noexcept(is_nothrow_constructible_v<Tj,T>) :
         __base{in_place<Tj>, forward<T>(t)}
     {
@@ -1104,6 +1137,7 @@ public:
               class... Args,
               enable_if_t<is_constructible_v<T, Args...>, bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     constexpr explicit variant(in_place_type_t<T>, Args&&... args) :
         __base{in_place<T>, forward<Args>(args)...}
     {};
@@ -1113,6 +1147,7 @@ public:
               class... Args,
               enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     constexpr explicit variant(in_place_type_t<T>, initializer_list<U> il, Args&&... args) :
         __base{in_place<T>, forward<initializer_list<U>>(il), forward<Args>(args)...}
     {};
@@ -1122,6 +1157,7 @@ public:
               class T = variant_alternative_t<I,variant>,
               enable_if_t<is_constructible_v<T, Args...>, bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     constexpr explicit variant(in_place_index_t<I>, Args&&... args) :
         __base{in_place<T>, forward<Args>(args)...}
     {};
@@ -1132,6 +1168,7 @@ public:
               class T = variant_alternative_t<I,variant>,
               enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     constexpr explicit variant(in_place_index_t<I>, initializer_list<U> il, Args&&... args) :
         __base{in_place<variant_alternative_t<I,variant>>, forward<initializer_list<U>>(il), forward<Args>(args)...}
     {};
@@ -1140,6 +1177,7 @@ public:
     template <class Alloc,
               class T0 = variant_alternative_t<0,variant>,
               enable_if_t<is_constructible_v<T0>, bool> = true>
+    _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a) :
         __base{allocator_arg_t{}, a, in_place<T0>}
     {
@@ -1151,6 +1189,7 @@ public:
               class TN = __first_or_last_t<is_copy_constructible,Types...>,
               enable_if_t<is_copy_constructible_v<TN>, bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, const variant& v) :
         __base{}
     {
@@ -1163,6 +1202,7 @@ public:
               class TN = __first_or_last_t<is_move_constructible,Types...>,
               enable_if_t<is_move_constructible_v<TN>, bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, variant&& v) :
         __base{}
     {
@@ -1178,6 +1218,7 @@ public:
               enable_if_t<!is_same_v<decay_t<T>,variant>,bool> = false,
               enable_if_t<is_constructible_v<Tj,T>,bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, T&& t) :
         __base{allocator_arg_t{}, a, in_place<T>, forward<T>(t)}
     {
@@ -1192,6 +1233,7 @@ public:
               class... Args,
               enable_if_t<is_constructible_v<T, Args...>, bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
         __base{allocator_arg_t{}, a, in_place<T>, forward<Args>(args) ...}
     {};
@@ -1202,6 +1244,7 @@ public:
               class... Args,
               enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, in_place_type_t<T>, initializer_list<U> il, Args&&... args) :
         __base{allocator_arg_t{}, a, in_place<T>, forward<initializer_list<U>>(il), forward<Args>(args) ...}
     {};
@@ -1212,6 +1255,7 @@ public:
               class T = variant_alternative_t<I,variant>,
               enable_if_t<is_constructible_v<T, Args...>, bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, in_place_index_t<I>, Args&&... args) :
         __base{allocator_arg_t{}, a, in_place<T>, forward<Args>(args) ...}
     {};
@@ -1223,22 +1267,26 @@ public:
               class T = variant_alternative_t<I,variant>,
               enable_if_t<is_constructible_v<T, initializer_list<U>&, Args...>, bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, in_place_index_t<I>, initializer_list<U> il, Args&&... args) :
         __base{allocator_arg_t{}, a, in_place<T>, forward<initializer_list<U>>(il), forward<Args>(args) ...}
     {};
 
     // 20.7.2.2, destructor
+    _LIBCPP_INLINE_VISIBILITY
     ~variant() = default;
 
     // 20.7.2.3, assignment
-
+    _LIBCPP_INLINE_VISIBILITY
     variant& operator=(const variant&) = default;
 
+    _LIBCPP_INLINE_VISIBILITY
     variant& operator=(variant&&) = default;
 
     template <class T,
               enable_if_t<!is_same_v<decay_t<T>,variant>,bool> = true
               >
+    _LIBCPP_INLINE_VISIBILITY
     variant& operator=(T&& rhs) noexcept(conjunction_v<is_nothrow_assignable<Types&,Types>    ...>  &&
                                          conjunction_v<is_nothrow_constructible<Types&,Types> ...>)
     {
@@ -1254,6 +1302,7 @@ public:
     // 20.7.2.4, modifiers
 
     template <class T, class... Args>
+    _LIBCPP_INLINE_VISIBILITY
     void emplace(Args&&... args)
     {
         if(!valueless_by_exception())
@@ -1262,6 +1311,7 @@ public:
     };
 
     template <class T, class U, class... Args>
+    _LIBCPP_INLINE_VISIBILITY
     void emplace(initializer_list<U> il, Args&&... args)
     {
         if(!valueless_by_exception())
@@ -1270,6 +1320,7 @@ public:
     };
 
     template <size_t I, class... Args>
+    _LIBCPP_INLINE_VISIBILITY
     void emplace(Args&&... args)
     {
         using T = variant_alternative_t<I,variant>;
@@ -1277,6 +1328,7 @@ public:
     };
 
     template <size_t I, class U, class... Args>
+    _LIBCPP_INLINE_VISIBILITY
     void emplace(initializer_list<U> il, Args&&... args)
     {
         using T = variant_alternative_t<I,variant>;
@@ -1284,17 +1336,20 @@ public:
     };
 
     // 20.7.2.5, value status
+    _LIBCPP_INLINE_VISIBILITY
     constexpr bool valueless_by_exception() const noexcept
     {
         return m_index == variant_npos;
     }
 
+    _LIBCPP_INLINE_VISIBILITY
     constexpr size_t index() const noexcept
     {
         return m_index;
     };
 
     // 20.7.2.6, swap
+    _LIBCPP_INLINE_VISIBILITY
     void swap(variant& rhs) noexcept(conjunction_v<is_nothrow_move_constructible<Types> ...> &&
                                      conjunction_v<is_nothrow_swappable<Types> ...>)
     {
@@ -1324,6 +1379,7 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 template <class... Types>
 struct hash<_VSTD_EXPERIMENTAL::variant<Types...>>
 {
+    _LIBCPP_INLINE_VISIBILITY
     size_t operator()(const _VSTD_EXPERIMENTAL::variant<Types...>& v) noexcept
     {
         constexpr auto hash = _VSTD_EXPERIMENTAL::__make_hash_array<Types...>(index_sequence_for<Types...>{});
@@ -1334,6 +1390,7 @@ struct hash<_VSTD_EXPERIMENTAL::variant<Types...>>
 template <>
 struct hash<_VSTD_EXPERIMENTAL::monostate>
 {
+    _LIBCPP_INLINE_VISIBILITY
     size_t operator()(_VSTD_EXPERIMENTAL::monostate) noexcept
     {
         return 42;
