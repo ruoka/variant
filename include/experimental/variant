@@ -142,7 +142,8 @@ union __variant_storage<Type,__trivial>
 {
     Type m_type;
 
-    constexpr __variant_storage() = default;
+    constexpr __variant_storage() : m_type{}
+    {}
 
     template<class... Args>
     constexpr __variant_storage(in_place_type_t<Type>, Args&&... args) :
@@ -155,7 +156,8 @@ union __variant_storage<Type,__non_trivial>
 {
     aligned_storage_t<sizeof(Type), alignof(Type)> m_storage;
 
-    constexpr __variant_storage() = default;
+    constexpr __variant_storage() : m_storage{}
+    {}
 
     template<class... Args>
     __variant_storage(in_place_type_t<Type>, Args&&... args) :
@@ -178,7 +180,8 @@ union __variant_storage<Type>
 
     __variant_storage<Type, conditional_t<trivial, __trivial, __non_trivial>> m_head;
 
-    constexpr __variant_storage() = default;
+    constexpr __variant_storage() : m_head{}
+    {}
 
     template <class T,
               class... Args,
@@ -222,7 +225,8 @@ union __variant_storage
 
     __variant_storage<Types...> m_tail;
 
-    __variant_storage() = default;
+    __variant_storage()
+    {}
 
     template <class T,
               class... Args,
@@ -354,7 +358,7 @@ protected:
     void __construct(in_place_type_t<T>, Args&&... args)
     {
         assert(m_index < 0);
-        new(&m_storage) T{forward<Args>(args) ...};
+        new(&m_storage) decay_t<T>{forward<Args>(args) ...};
         m_index = __variant_index_v<T, Types...>;
     };
 
@@ -366,7 +370,7 @@ protected:
     void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
     {
         assert(m_index < 0);
-        new(&m_storage) T{allocator_arg_t{}, a, forward<Args>(args) ...};
+        new(&m_storage) decay_t<T>{allocator_arg_t{}, a, forward<Args>(args) ...};
         m_index = __variant_index_v<T, Types...>;
     };
 
@@ -378,7 +382,7 @@ protected:
     void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
     {
         assert(m_index < 0);
-        new(&m_storage) T{forward<Args>(args) ..., a};
+        new(&m_storage) decay_t<T>{forward<Args>(args) ..., a};
         m_index = __variant_index_v<T, Types...>;
     };
 
@@ -391,7 +395,7 @@ protected:
     void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
     {
         assert(m_index < 0);
-        new(&m_storage) T{forward<Args>(args) ...};
+        new(&m_storage) decay_t<T>{forward<Args>(args) ...};
         m_index = __variant_index_v<T, Types...>;
     };
 
@@ -574,10 +578,10 @@ class __variant_base<false,false,false,true,TiviallyDestructible,Types...> :
 public __variant_base<false,false,false,false,TiviallyDestructible,Types...>
 {
     using __base = __variant_base<false,false,false,false,TiviallyDestructible,Types...>;
-    using __base::__base;
 
 protected:
 
+    using __base::__base;
     using __base::__move;
     using __base::__destroy;
     using __base::m_index;
@@ -606,10 +610,10 @@ class __variant_base<false,false,true,MoveAssignable,TiviallyDestructible,Types.
 public __variant_base<false,false,false,MoveAssignable,TiviallyDestructible,Types...>
 {
     using __base = __variant_base<false,false,false,MoveAssignable,TiviallyDestructible,Types...>;
-    using __base::__base;
 
 protected:
 
+    using __base::__base;
     using __base::__copy;
     using __base::__destroy;
     using __base::m_index;
@@ -642,10 +646,10 @@ class __variant_base<false,true,CopyAssignable,MoveAssignable,TiviallyDestructib
 public __variant_base<false,false,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>
 {
     using __base = __variant_base<false,false,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>;
-    using __base::__base;
 
 protected:
 
+    using __base::__base;
     using __base::__move;
 
     __variant_base(__variant_base&& v) :
@@ -675,10 +679,10 @@ class __variant_base<true,MoveConstructible,CopyAssignable,MoveAssignable,Tivial
 public __variant_base<false,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>
 {
     using __base = __variant_base<false,MoveConstructible,CopyAssignable,MoveAssignable,TiviallyDestructible,Types...>;
-    using __base::__base;
 
 protected:
 
+    using __base::__base;
     using __base::__copy;
 
     __variant_base(const __variant_base& v) :
