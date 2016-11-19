@@ -168,6 +168,8 @@ namespace std::__helper {
     template <class T, class U, class... Types>
     struct __index<T, U, Types...> : integral_constant<size_t, 1 + __index_v<T, Types...>> {};
 
+// Variant Base Class
+
     template <bool CopyConstructible,
               bool MoveConstructible,
               bool CopyAssignable,
@@ -175,6 +177,8 @@ namespace std::__helper {
               bool TiviallyDestructible,
               class... Types>
     class __variant_storage; // undefined
+
+// NonTiviallyDestructible Specialisation
 
     template <class... Types>
     class __variant_storage<false,false,false,false,false,Types...>
@@ -206,7 +210,7 @@ namespace std::__helper {
         }
 
         template <class Alloc, class T, class... Args>
-        constexpr __variant_storage(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
+        __variant_storage(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
             m_storage{},
             m_index{-1}
         {
@@ -288,8 +292,8 @@ protected:
         {
             assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
             assert(m_index < 0);
-            using F = void(__variant_storage::*)(const __variant_storage&);
-            constexpr F __array[sizeof...(Types)] = {&__variant_storage::__private_copy<Types> ...};
+            using function = void(__variant_storage::*)(const __variant_storage&);
+            constexpr function __array[sizeof...(Types)] = {&__variant_storage::__private_copy<Types> ...};
             (this->*__array[v.m_index])(v);
         }
 
@@ -325,8 +329,8 @@ protected:
         {
             assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
             assert(m_index < 0);
-            using F = void(__variant_storage::*)(__variant_storage&&);
-            constexpr F __array[sizeof...(Types)] = {&__variant_storage::__private_move<Types> ...};
+            using function = void(__variant_storage::*)(__variant_storage&&);
+            constexpr function __array[sizeof...(Types)] = {&__variant_storage::__private_move<Types> ...};
             (this->*__array[v.m_index])(forward<__variant_storage>(v));
         }
 
@@ -368,6 +372,8 @@ protected:
         };
     };
 
+// TiviallyDestructible Specialisation
+
     template <class... Types>
     class __variant_storage<false,false,false,false,true,Types...>
     {
@@ -404,21 +410,22 @@ protected:
             m_index = __index_v<T, Types...>;
         };
 
+private:
+
         template<class T>
-        void __copy(const __variant_storage& v)
+        void __private_copy(const __variant_storage& v)
         {
-            assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
-            assert(m_index < 0);
-            __construct(in_place<T>,v.m_storage.template get<T>());
-            m_index = v.m_index;
+            __construct(in_place<T>, v.m_storage.template get<T>());
         }
+
+protected:
 
         void __copy(const __variant_storage& v)
         {
             assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
             assert(m_index < 0);
             using F = void(__variant_storage::*)(const __variant_storage&);
-            constexpr F __array[sizeof...(Types)] = {&__variant_storage::__copy<Types> ...};
+            constexpr F __array[sizeof...(Types)] = {&__variant_storage::__private_copy<Types> ...};
             (this->*__array[v.m_index])(v);
         }
 
@@ -433,6 +440,8 @@ protected:
             m_index = -1;
         };
     };
+
+// MoveAssignable Specialisation
 
     template <bool TiviallyDestructible,
               class... Types>
@@ -462,6 +471,8 @@ protected:
             return *this;
         }
     };
+
+// CopyAssignable Specialisation
 
     template <bool MoveAssignable,
               bool TiviallyDestructible,
@@ -496,6 +507,8 @@ protected:
         __variant_storage& operator=(__variant_storage&&) = default;
     };
 
+// MoveConstructible Specialisation
+
     template <bool CopyAssignable,
               bool MoveAssignable,
               bool TiviallyDestructible,
@@ -522,6 +535,8 @@ protected:
         __variant_storage& operator=(const __variant_storage&) = default;
         __variant_storage& operator=(__variant_storage&&) = default;
     };
+
+// CopyConstructible Specialisation
 
     template <bool MoveConstructible,
               bool CopyAssignable,
@@ -550,6 +565,7 @@ protected:
         __variant_storage& operator=(__variant_storage&&) = default;
     };
 
+// Helper Templates for Variant
 
     template < template <class> class Test, class... Types>
     struct __first_or_last;

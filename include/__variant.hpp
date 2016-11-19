@@ -553,7 +553,7 @@ namespace std {
                   enable_if_t<!is_same_v<decay_t<T>,variant>,bool> = true
                   >
         variant& operator=(T&& rhs) noexcept(conjunction_v<is_nothrow_assignable<Types&,Types>    ...>  &&
-                                                                       conjunction_v<is_nothrow_constructible<Types&,Types> ...>)
+                                             conjunction_v<is_nothrow_constructible<Types&,Types> ...>)
         {
             static_assert(!is_same_v<decay_t<T>, variant> && is_assignable_v<T&, T> && is_constructible_v<T, T>,
             R"(This function shall not participate in overload resolution unless is_same_v<decay_t<T>, variant> is false,
