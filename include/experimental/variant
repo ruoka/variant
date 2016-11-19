@@ -1,3 +1,13 @@
+// -*- C++ -*-
+//===-------------------------- variant ----------------------------------===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is dual licensed under the MIT and the University of Illinois Open
+// Source Licenses. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef _LIBCPP_EXPERIMENTAL_VARIANT
 #define _LIBCPP_EXPERIMENTAL_VARIANT
 
