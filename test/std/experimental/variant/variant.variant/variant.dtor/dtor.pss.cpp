@@ -33,7 +33,7 @@ int main()
 
     assert(count == 0);
     {
-        variant<bar> v{std::in_place<bar>};
+        variant<bar> v{std::in_place_type<bar>};
         assert(count == 1);
     }
     assert(count == 2);

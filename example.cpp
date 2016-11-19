@@ -151,7 +151,7 @@ int main()
     test v12{std::allocator_arg_t{}, a1, v11};
     visit([](const auto& arg){std::cout << arg << std::endl;}, v12);
 
-    test v13{std::allocator_arg_t{}, a1, std::in_place<std::string>, "HIJKLM"};
+    test v13{std::allocator_arg_t{}, a1, std::in_place_type<std::string>, "HIJKLM"};
     visit([](const auto& arg){std::cout << arg << std::endl;}, v13);
 
     return 0;

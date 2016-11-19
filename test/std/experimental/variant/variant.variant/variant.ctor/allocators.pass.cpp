@@ -61,27 +61,27 @@ void test_constructors()
     assert(v3.index() == 2);
     assert(get<2>(v3) == 2.2);
 
-    variant v4{std::allocator_arg_t{}, a, std::in_place<std::vector<int>>, {1,2,3,4,5,6,7}};
+    variant v4{std::allocator_arg_t{}, a, std::in_place_type<std::vector<int>>, {1,2,3,4,5,6,7}};
     assert(v4.index() == 3);
     assert(get<3>(v4).size() == 7);
 
-    variant v5{std::allocator_arg_t{}, a, std::in_place<3>, {1,2,3,4,5,6,7,8}};
+    variant v5{std::allocator_arg_t{}, a, std::in_place_index<3>, {1,2,3,4,5,6,7,8}};
     assert(v5.index() == 3);
     assert(get<3>(v5).size() == 8);
 
-    variant v6{std::allocator_arg_t{}, a, std::in_place<std::string>, "foo"};
+    variant v6{std::allocator_arg_t{}, a, std::in_place_type<std::string>, "foo"};
     assert(v6.index() == 4);
     assert(get<4>(v6) == "foo");
 
-    variant v7{std::allocator_arg_t{}, a, std::in_place<4>, "bar"};
+    variant v7{std::allocator_arg_t{}, a, std::in_place_index<4>, "bar"};
     assert(v7.index() == 4);
     assert(get<4>(v7) == "bar");
 
-    variant v8{std::allocator_arg_t{}, a, std::in_place<std::string>, {'a','b','c','d'}};
+    variant v8{std::allocator_arg_t{}, a, std::in_place_type<std::string>, {'a','b','c','d'}};
     assert(v8.index() == 4);
     assert(get<4>(v8) == "abcd");
 
-    variant v9{std::allocator_arg_t{}, a, std::in_place<4>, std::size_t{10}, 'a'};
+    variant v9{std::allocator_arg_t{}, a, std::in_place_index<4>, std::size_t{10}, 'a'};
     assert(v9.index() == 4);
     assert(get<4>(v9) == "aaaaaaaaaa");
 

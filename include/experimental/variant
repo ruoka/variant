@@ -86,8 +86,8 @@ namespace std {
         variant(const variant&);
         variant(variant&&) noexcept(see below);
         template <class T> constexpr variant(T&&) noexcept(see below);
-        template <class T, class... Args> constexpr explicit variant(in_place_type_t<T>, Args&&...);
-        template <class T, class U, class... Args> constexpr explicit variant(in_place_type_t<T>, initializer_list<U>, Args&&...);
+        template <class T, class... Args> constexpr explicit variant(in_place_type<T>, Args&&...);
+        template <class T, class U, class... Args> constexpr explicit variant(in_place_type<T>, initializer_list<U>, Args&&...);
         template <size_t I, class... Args> constexpr explicit variant(in_place_index_t<I>, Args&&...);
         template <size_t I, class U, class... Args> constexpr explicit variant(in_place_index_t<I>, initializer_list<U>, Args&&...);
         // allocator-extended constructors
@@ -95,8 +95,8 @@ namespace std {
         template <class Alloc> variant(allocator_arg_t, const Alloc&, const variant&);
         template <class Alloc> variant(allocator_arg_t, const Alloc&, variant&&);
         template <class Alloc, class T> variant(allocator_arg_t, const Alloc&, T&&);
-        template <class Alloc, class T, class... Args> variant(allocator_arg_t, const Alloc&, in_place_type_t<T>, Args&&...);
-        template <class Alloc, class T, class U, class... Args> variant(allocator_arg_t, const Alloc&, in_place_type_t<T>, initializer_list<U>, Args&&...);
+        template <class Alloc, class T, class... Args> variant(allocator_arg_t, const Alloc&, in_place_type<T>, Args&&...);
+        template <class Alloc, class T, class U, class... Args> variant(allocator_arg_t, const Alloc&, in_place_type<T>, initializer_list<U>, Args&&...);
         template <class Alloc, size_t I, class... Args> variant(allocator_arg_t, const Alloc&, in_place_index_t<I>, Args&&...);
         template <class Alloc, size_t I, class U, class... Args> variant(allocator_arg_t, const Alloc&, in_place_index_t<I>, initializer_list<U>, Args&&...);
         // 20.7.2.2, destructor
@@ -122,6 +122,7 @@ namespace std {
 #include <experimental/__config>
 #include <tuple>
 #include <array>
+#include <utility>
 #include <functional>
 #include <cassert>
 
@@ -184,7 +185,7 @@ union __variant_storage<Type>
               enable_if_t<is_same_v<T,Type>, bool> = true
               >
     constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
-        m_head{in_place<T>, forward<Args>(args)...}
+        m_head{in_place_type<T>, forward<Args>(args)...}
     {}
 
     template <class T, enable_if_t<is_same_v<T,Type> && trivial, bool> = true>
@@ -228,7 +229,7 @@ union __variant_storage
               enable_if_t<is_same_v<T,Type>, bool> = true
               >
     constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
-        m_head{in_place<T>, forward<Args>(args)...}
+        m_head{in_place_type<T>, forward<Args>(args)...}
     {}
 
     template <class T,
@@ -236,7 +237,7 @@ union __variant_storage
               enable_if_t<!is_same_v<T,Type>, bool> = true
               >
     constexpr __variant_storage(in_place_type_t<T>, Args&&... args) :
-        m_tail{in_place<T>, forward<Args>(args)...}
+        m_tail{in_place_type<T>, forward<Args>(args)...}
     {}
 
     template <class T, enable_if_t<is_same_v<T,Type> && trivial, bool> = true>
@@ -329,7 +330,7 @@ protected:
         m_storage{},
         m_index{-1}
     {
-        __construct(in_place<T>, forward<Args>(args) ...);
+        __construct(in_place_type<T>, forward<Args>(args) ...);
     }
 
     template <class Alloc, class T, class... Args>
@@ -337,7 +338,7 @@ protected:
         m_storage{},
         m_index{-1}
     {
-        __construct(allocator_arg_t{}, a, in_place<T>, forward<Args>(args) ...);
+        __construct(allocator_arg_t{}, a, in_place_type<T>, forward<Args>(args) ...);
     }
 
     ~__variant_base()
@@ -399,7 +400,7 @@ private:
     template<class T>
     void __private_copy(const __variant_base& v)
     {
-        __construct(in_place<T>, v.m_storage.template get<T>());
+        __construct(in_place_type<T>, v.m_storage.template get<T>());
     }
 
     template <class Alloc,
@@ -407,7 +408,7 @@ private:
               >
     void __private_copy(allocator_arg_t, const Alloc& a, const __variant_base& v)
     {
-        __construct(allocator_arg_t{}, a, in_place<T>, v.m_storage.template get<T>());
+        __construct(allocator_arg_t{}, a, in_place_type<T>, v.m_storage.template get<T>());
     }
 
 protected:
@@ -436,7 +437,7 @@ private:
     template<class T>
     void __private_move(__variant_base&& v)
     {
-        __construct(in_place<T>, move(v.m_storage.template get<T>()));
+        __construct(in_place_type<T>, move(v.m_storage.template get<T>()));
     }
 
     template <class Alloc,
@@ -444,7 +445,7 @@ private:
               >
     void __private_move(allocator_arg_t, const Alloc& a, __variant_base&& v)
     {
-        __construct(allocator_arg_t{}, a, in_place<T>, move(v.m_storage.template get<T>()));
+        __construct(allocator_arg_t{}, a, in_place_type<T>, move(v.m_storage.template get<T>()));
     }
 
 protected:
@@ -522,7 +523,7 @@ protected:
 
     template <class T, class... Args>
     constexpr __variant_base(in_place_type_t<T>, Args&&... args) :
-        m_storage{in_place<T>, forward<Args>(args) ...},
+        m_storage{in_place_type<T>, forward<Args>(args) ...},
         m_index{__variant_index_v<T, Types...>}
     {}
 
@@ -539,7 +540,7 @@ private:
     template<class T>
     void __private_copy(const __variant_base& v)
     {
-        __construct(in_place<T>, v.m_storage.template get<T>());
+        __construct(in_place_type<T>, v.m_storage.template get<T>());
     }
 
 protected:
@@ -1096,7 +1097,7 @@ public:
               enable_if_t<is_default_constructible_v<T0>, bool> = true>
     _LIBCPP_INLINE_VISIBILITY
     constexpr variant() noexcept(is_nothrow_default_constructible_v<T0>) :
-        __base{in_place<T0>}
+        __base{in_place_type<T0>}
     {
         static_assert(is_default_constructible_v<T0>,
             "This function shall not participate in overload resolution unless is_default_constructible_v<T0> is true.");
@@ -1124,7 +1125,7 @@ public:
               >
     _LIBCPP_INLINE_VISIBILITY
     constexpr variant(T&& t) noexcept(is_nothrow_constructible_v<Tj,T>) :
-        __base{in_place<Tj>, forward<T>(t)}
+        __base{in_place_type<Tj>, forward<T>(t)}
     {
         static_assert(!is_same_v<decay_t<T>,variant> && is_constructible_v<Tj,T> && __imaginary_function_well_formed_v<Tj,Types...>,
             R"(This function shall not participate in overload resolution
@@ -1138,7 +1139,7 @@ public:
               >
     _LIBCPP_INLINE_VISIBILITY
     constexpr explicit variant(in_place_type_t<T>, Args&&... args) :
-        __base{in_place<T>, forward<Args>(args)...}
+        __base{in_place_type<T>, forward<Args>(args)...}
     {};
 
     template <class T,
@@ -1148,7 +1149,7 @@ public:
               >
     _LIBCPP_INLINE_VISIBILITY
     constexpr explicit variant(in_place_type_t<T>, initializer_list<U> il, Args&&... args) :
-        __base{in_place<T>, forward<initializer_list<U>>(il), forward<Args>(args)...}
+        __base{in_place_type<T>, forward<initializer_list<U>>(il), forward<Args>(args)...}
     {};
 
     template <size_t I,
@@ -1158,7 +1159,7 @@ public:
               >
     _LIBCPP_INLINE_VISIBILITY
     constexpr explicit variant(in_place_index_t<I>, Args&&... args) :
-        __base{in_place<T>, forward<Args>(args)...}
+        __base{in_place_type<T>, forward<Args>(args)...}
     {};
 
     template <size_t I,
@@ -1169,7 +1170,7 @@ public:
               >
     _LIBCPP_INLINE_VISIBILITY
     constexpr explicit variant(in_place_index_t<I>, initializer_list<U> il, Args&&... args) :
-        __base{in_place<variant_alternative_t<I,variant>>, forward<initializer_list<U>>(il), forward<Args>(args)...}
+        __base{in_place_type<variant_alternative_t<I,variant>>, forward<initializer_list<U>>(il), forward<Args>(args)...}
     {};
 
     // allocator-extended constructors
@@ -1178,7 +1179,7 @@ public:
               enable_if_t<is_constructible_v<T0>, bool> = true>
     _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a) :
-        __base{allocator_arg_t{}, a, in_place<T0>}
+        __base{allocator_arg_t{}, a, in_place_type<T0>}
     {
         static_assert(is_default_constructible_v<T0>,
             "This function shall not participate in overload resolution unless is_default_constructible_v<T0> is true.");
@@ -1219,7 +1220,7 @@ public:
               >
     _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, T&& t) :
-        __base{allocator_arg_t{}, a, in_place<T>, forward<T>(t)}
+        __base{allocator_arg_t{}, a, in_place_type<T>, forward<T>(t)}
     {
         static_assert(!is_same_v<decay_t<T>,variant> && is_constructible_v<Tj,T> && __imaginary_function_well_formed_v<Tj,Types...>,
             R"(This function shall not participate in overload resolution
@@ -1234,7 +1235,7 @@ public:
               >
     _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
-        __base{allocator_arg_t{}, a, in_place<T>, forward<Args>(args) ...}
+        __base{allocator_arg_t{}, a, in_place_type<T>, forward<Args>(args) ...}
     {};
 
     template <class Alloc,
@@ -1245,7 +1246,7 @@ public:
               >
     _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, in_place_type_t<T>, initializer_list<U> il, Args&&... args) :
-        __base{allocator_arg_t{}, a, in_place<T>, forward<initializer_list<U>>(il), forward<Args>(args) ...}
+        __base{allocator_arg_t{}, a, in_place_type<T>, forward<initializer_list<U>>(il), forward<Args>(args) ...}
     {};
 
     template <class Alloc,
@@ -1256,7 +1257,7 @@ public:
               >
     _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, in_place_index_t<I>, Args&&... args) :
-        __base{allocator_arg_t{}, a, in_place<T>, forward<Args>(args) ...}
+        __base{allocator_arg_t{}, a, in_place_type<T>, forward<Args>(args) ...}
     {};
 
     template <class Alloc,
@@ -1268,7 +1269,7 @@ public:
               >
     _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, in_place_index_t<I>, initializer_list<U> il, Args&&... args) :
-        __base{allocator_arg_t{}, a, in_place<T>, forward<initializer_list<U>>(il), forward<Args>(args) ...}
+        __base{allocator_arg_t{}, a, in_place_type<T>, forward<initializer_list<U>>(il), forward<Args>(args) ...}
     {};
 
     // 20.7.2.2, destructor
@@ -1294,7 +1295,7 @@ public:
                                                                       unless is_assignable_v<Tj&, T> && is_constructible_v<Tj, T> is true)");
         if(!valueless_by_exception())
             __destroy();
-        __construct(in_place<T>, forward<T>(rhs));
+        __construct(in_place_type<T>, forward<T>(rhs));
         return *this;
     };
 
@@ -1306,7 +1307,7 @@ public:
     {
         if(!valueless_by_exception())
             __destroy();
-        __construct(in_place<T>, forward<Args>(args)...);
+        __construct(in_place_type<T>, forward<Args>(args)...);
     };
 
     template <class T, class U, class... Args>
@@ -1315,7 +1316,7 @@ public:
     {
         if(!valueless_by_exception())
             __destroy();
-        __construct(in_place<T>, il, forward<Args>(args)...);
+        __construct(in_place_type<T>, il, forward<Args>(args)...);
     };
 
     template <size_t I, class... Args>
