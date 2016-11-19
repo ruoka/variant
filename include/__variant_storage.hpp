@@ -496,4 +496,21 @@ namespace std::__helper {
         __variant_storage& operator=(__variant_storage&&) = default;
     };
 
+
+    template < template <class> class Test, class... Types>
+    struct __first_or_last;
+
+    template < template <class> class Test, class... Types>
+    using __first_or_last_t = typename __first_or_last<Test, Types...>::type;
+
+    template < template <class> class Test, class T>
+    struct __first_or_last<Test,T> {using type = T;};
+
+    template < template <class> class Test, class T, class... Types>
+    struct __first_or_last<Test, T, Types...>
+    {
+        static constexpr Test<T> test;
+        using type = conditional_t<!test, T, __first_or_last_t<Test, Types...>>;
+    };
+
 } // namespace std::__helper

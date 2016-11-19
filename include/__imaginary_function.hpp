@@ -25,6 +25,9 @@ namespace std::__helper {
         constexpr __argument<T> operator()(T) const noexcept;
     };
 
+    template <class T, class... Types>
+    using __imaginary_function_argument_t = typename result_of_t<__helper::__imaginary_function<Types...>(T)>::type;
+
 
     template <class T, class... Types>
     struct __count; // undefined
@@ -37,11 +40,6 @@ namespace std::__helper {
 
     template <class T, class U, class... Types>
     struct __count<T, U, Types...> : integral_constant<size_t, is_same_v<T,U > + __count_v<T, Types...>> {};
-
-
-    template <class T, class... Types>
-    using __imaginary_function_argument_t = typename result_of_t<__helper::__imaginary_function<Types...>(T)>::type;
-
 
     template <class T, class... Types>
     constexpr bool __imaginary_function_well_formed_v = __count<T, Types...>::value == 1;

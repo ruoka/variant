@@ -388,7 +388,8 @@ namespace std {
         };
 
         template <class T0 = variant_alternative_t<0,variant>,
-                  enable_if_t<!is_default_constructible_v<T0>, bool> = false>
+                  enable_if_t<!is_default_constructible_v<T0>, bool> = false
+                  >
         constexpr variant() noexcept(is_nothrow_default_constructible_v<T0>) = delete;
 
         // We'll inherit the copy and move constructors from the __base
@@ -451,7 +452,7 @@ namespace std {
         // allocator-extended constructors
         template <class Alloc,
                   class T0 = variant_alternative_t<0,variant>,
-                  enable_if_t<is_default_constructible_v<T0>, bool> = true>
+                  enable_if_t<is_constructible_v<T0>, bool> = true>
         variant(allocator_arg_t, const Alloc& a) :
             __base{allocator_arg_t{}, a, in_place<T0>}
         {
@@ -460,11 +461,9 @@ namespace std {
         };
 
         template <class Alloc,
-                  class T0 = variant_alternative_t<0,variant>,
-                  enable_if_t<!is_default_constructible_v<T0>, bool> = true>
-        variant(allocator_arg_t, const Alloc& a) = delete;
-
-        template <class Alloc>
+                  class TN = __helper::__first_or_last_t<is_copy_constructible,Types...>,
+                  enable_if_t<is_copy_constructible_v<TN>, bool> = true
+                  >
         variant(allocator_arg_t, const Alloc& a, const variant& v) :
             __base{}
         {
@@ -473,7 +472,10 @@ namespace std {
             __copy(v); // FIXME
         }
 
-        template <class Alloc>
+        template <class Alloc,
+                  class TN = __helper::__first_or_last_t<is_move_constructible,Types...>,
+                  enable_if_t<is_move_constructible_v<TN>, bool> = true
+                  >
         variant(allocator_arg_t, const Alloc& a, variant&& v) :
             __base{}
         {
