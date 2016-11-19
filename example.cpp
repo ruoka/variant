@@ -72,11 +72,6 @@ int main()
     variant<monostate,void,bool,double> fb{};
     fb.emplace<bool>(true);
 
-    std::cout << std::experimental::__count_v<bool,char,double,float> << std::endl;
-    std::cout << std::experimental::__count_v<bool,char,bool,double> << std::endl;
-    std::cout << std::experimental::__count_v<bool,bool,double,bool,bool> << std::endl;
-    std::cout << std::experimental::__index_v<bool,bool,int,double,std::string> << std::endl;
-
     using test = variant<bool,int,double,std::string>;
     std::cout << variant_size_v<test> << std::endl;
 
@@ -110,9 +105,6 @@ int main()
     std::cout << std::boolalpha << holds_alternative<double>(v1) << std::endl;
 
     std::cout << std::boolalpha << (v1 == v2) << std::endl;
-
-    constexpr auto less = std::experimental::__make_less_array<bool,int,double,std::string>(std::index_sequence_for<bool, int, double, std::string>{});
-    std::cout << std::boolalpha << less[0](v1,v2) << std::endl;
 
     v1 = true;
     visit(test_1{}, v1);
