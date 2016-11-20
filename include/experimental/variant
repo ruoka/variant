@@ -1528,11 +1528,11 @@ public:
       __swap[__lhs.__m_index](__lhs,__rhs);
     else
     {
-      variant tmp{__rhs};
+      variant __tmp{__rhs};
       __rhs.__m_index = __lhs.__m_index;
       __swap[__lhs.__m_index](__rhs,__lhs);
-      __lhs.__m_index = tmp.__m_index;
-      __swap[__lhs.__m_index](__lhs,tmp);
+      __lhs.__m_index = __tmp.__m_index;
+      __swap[__lhs.__m_index](__lhs,__tmp);
     }
   }
 };
