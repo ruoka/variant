@@ -359,7 +359,7 @@ protected:
     {
         assert(m_index < 0);
         new(&m_storage) decay_t<T>{forward<Args>(args) ...};
-        m_index = __variant_index_v<T, Types...>;
+        m_index = __variant_index_v<decay_t<T>, Types...>;
     };
 
     template <class Alloc,
@@ -371,7 +371,7 @@ protected:
     {
         assert(m_index < 0);
         new(&m_storage) decay_t<T>{allocator_arg_t{}, a, forward<Args>(args) ...};
-        m_index = __variant_index_v<T, Types...>;
+        m_index = __variant_index_v<decay_t<T>, Types...>;
     };
 
     template <class Alloc,
@@ -383,7 +383,7 @@ protected:
     {
         assert(m_index < 0);
         new(&m_storage) decay_t<T>{forward<Args>(args) ..., a};
-        m_index = __variant_index_v<T, Types...>;
+        m_index = __variant_index_v<decay_t<T>, Types...>;
     };
 
     template <class Alloc,
@@ -396,7 +396,7 @@ protected:
     {
         assert(m_index < 0);
         new(&m_storage) decay_t<T>{forward<Args>(args) ...};
-        m_index = __variant_index_v<T, Types...>;
+        m_index = __variant_index_v<decay_t<T>, Types...>;
     };
 
 private:
@@ -419,7 +419,8 @@ protected:
 
     void __copy(const __variant_base& v)
     {
-        assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
+        assert(v.m_index >= 0);
+        assert(v.m_index < sizeof...(Types));
         assert(m_index < 0);
         using function = void(__variant_base::*)(const __variant_base&);
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_copy<Types> ...};
@@ -429,7 +430,8 @@ protected:
     template <class Alloc>
     void __copy(allocator_arg_t, const Alloc& a, const __variant_base& v)
     {
-        assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
+        assert(v.m_index >= 0);
+        assert(v.m_index < sizeof...(Types));
         assert(m_index < 0);
         using function = void(__variant_base::*)(allocator_arg_t, const Alloc&, const __variant_base&);
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_copy<Alloc,Types> ...};
@@ -456,21 +458,25 @@ protected:
 
     void __move(__variant_base&& v)
     {
-        assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
+        assert(v.m_index >= 0);
+        assert(v.m_index < sizeof...(Types));
         assert(m_index < 0);
         using function = void(__variant_base::*)(__variant_base&&);
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_move<Types> ...};
         (this->*__array[v.m_index])(forward<__variant_base>(v));
+        v.m_index = -1;
     }
 
     template <class Alloc>
     void __move(allocator_arg_t, const Alloc& a, __variant_base&& v)
     {
-        assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
+        assert(v.m_index >= 0);
+        assert(v.m_index < sizeof...(Types));
         assert(m_index < 0);
         using function = void(__variant_base::*)(allocator_arg_t, const Alloc&, __variant_base&&);
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_move<Alloc,Types> ...};
         (this->*__array[v.m_index])(allocator_arg_t{}, a, forward<__variant_base>(v));
+        v.m_index = -1;
     }
 
 private:
@@ -494,7 +500,8 @@ protected:
 
     void __destroy()
     {
-        assert(m_index >= 0 && m_index < sizeof...(Types));
+        assert(m_index >= 0);
+        assert(m_index < sizeof...(Types));
         using function = void(__variant_base::*)();
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_destroy<Types> ...};
         (this->*__array[m_index])();
@@ -528,7 +535,7 @@ protected:
     template <class T, class... Args>
     constexpr __variant_base(in_place_type_t<T>, Args&&... args) :
         m_storage{in_place_type<T>, forward<Args>(args) ...},
-        m_index{__variant_index_v<T, Types...>}
+        m_index{__variant_index_v<decay_t<T>, Types...>}
     {}
 
     template <class T, class... Args>
@@ -536,7 +543,7 @@ protected:
     {
         assert(m_index < 0);
         new(&m_storage) remove_reference_t<T>{forward<Args>(args) ...};
-        m_index = __variant_index_v<T, Types...>;
+        m_index = __variant_index_v<decay_t<T>, Types...>;
     };
 
 private:
@@ -561,6 +568,7 @@ protected:
     void __move(__variant_base&& v)
     {
         __copy(v);
+        v.m_index = -1;
     }
 
     void __destroy()
@@ -1199,7 +1207,8 @@ public:
     {
         static_assert(conjunction_v<is_copy_constructible<Types> ...>,
             "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
-        __copy(allocator_arg_t{}, a, v);
+        if(!v.valueless_by_exception())
+            __copy(allocator_arg_t{}, a, v);
     }
 
     template <class Alloc,
@@ -1212,24 +1221,25 @@ public:
     {
         static_assert(conjunction_v<is_move_constructible<Types> ...>,
             "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
-        __move(allocator_arg_t{}, a, forward<variant>(v));
+        if(!v.valueless_by_exception())
+            __move(allocator_arg_t{}, a, forward<variant>(v));
     }
 
     template <class Alloc,
               class T,
               class Tj = __imaginary_function_argument_t<T,Types...>,
-              enable_if_t<__imaginary_function_well_formed_v<Tj,Types...>,bool> = true,
               enable_if_t<!is_same_v<decay_t<T>,variant>,bool> = false,
-              enable_if_t<is_constructible_v<Tj,T>,bool> = true
+              enable_if_t<is_constructible_v<Tj,T>,bool> = true,
+              enable_if_t<__imaginary_function_well_formed_v<Tj,Types...>,bool> = true
               >
     _LIBCPP_INLINE_VISIBILITY
     variant(allocator_arg_t, const Alloc& a, T&& t) :
         __base{allocator_arg_t{}, a, in_place_type<T>, forward<T>(t)}
     {
         static_assert(!is_same_v<decay_t<T>,variant> && is_constructible_v<Tj,T> && __imaginary_function_well_formed_v<Tj,Types...>,
-            R"(This function shall not participate in overload resolution
-               unless is_same_v<decay_t<T>, variant> is false, unless is_constructible_v<Tj, T> is true, and
-               unless the expression FUN(std::forward<T>(t)) (with FUN being the above-mentioned set of imaginary functions) is well formed.)");
+            R"(This function shall not participate in overload resolution unless is_same_v<decay_t<T>, variant> is false,
+              unless is_constructible_v<Tj, T> is true, and
+              unless the expression FUN( std::forward<T>(t)) (with FUN being the above-mentioned set of imaginary functions) is well formed.)");
     };
 
     template <class Alloc,
@@ -1288,15 +1298,20 @@ public:
     variant& operator=(variant&&) = default;
 
     template <class T,
-              enable_if_t<!is_same_v<decay_t<T>,variant>,bool> = true
+              class Tj = __imaginary_function_argument_t<T,Types...>,
+              enable_if_t<!is_same_v<decay_t<T>,variant>,bool> = false,
+              enable_if_t<is_assignable_v<Tj&,T>,bool> = true,
+              enable_if_t<is_constructible_v<Tj,T>,bool> = true,
+              enable_if_t<__imaginary_function_well_formed_v<Tj,Types...>,bool> = true
               >
     _LIBCPP_INLINE_VISIBILITY
     variant& operator=(T&& rhs) noexcept(conjunction_v<is_nothrow_assignable<Types&,Types>    ...>  &&
                                          conjunction_v<is_nothrow_constructible<Types&,Types> ...>)
     {
-        static_assert(!is_same_v<decay_t<T>, variant> && is_assignable_v<T&, T> && is_constructible_v<T, T>,
-        R"(This function shall not participate in overload resolution unless is_same_v<decay_t<T>, variant> is false,
-                                                                      unless is_assignable_v<Tj&, T> && is_constructible_v<Tj, T> is true)");
+        static_assert(!is_same_v<decay_t<T>, variant> && is_assignable_v<Tj&, T> && is_constructible_v<Tj, T>,
+            R"(This function shall not participate in overload resolution unless is_same_v<decay_t<T>, variant> is false,
+               unless is_assignable_v<Tj&, T> && is_constructible_v<Tj, T> is true, and
+               unless the expression FUN (std::forward<T>(t)) (with FUN being the above-mentioned set of imaginary functions) is well formed.)");
         if(!valueless_by_exception())
             __destroy();
         __construct(in_place_type<T>, forward<T>(rhs));
