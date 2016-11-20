@@ -193,6 +193,10 @@ public:
 #include <functional>
 #include <cassert>
 
+// UNSUPPORTED: c++98, c++03, c++11, c++14
+
+#if _LIBCPP_STD_VER > 14
+
 _LIBCPP_BEGIN_NAMESPACE_EXPERIMENTAL
 
 // 20.7.10, class bad_variant_access
@@ -205,8 +209,6 @@ public:
 _LIBCPP_END_NAMESPACE_EXPERIMENTAL
 
 _LIBCPP_BEGIN_NAMESPACE_LFTS
-
-#if _LIBCPP_STD_VER > 14
 
 constexpr size_t variant_npos = -1;
 
@@ -1604,8 +1606,8 @@ struct hash<_VSTD_LFTS::monostate>
 template <class... _Types, class _Alloc>
 struct uses_allocator<_VSTD_LFTS::variant<_Types...>, _Alloc> : true_type {};
 
-#endif // _LIBCPP_STD_VER > 14
-
 _LIBCPP_END_NAMESPACE_STD
+
+#endif // _LIBCPP_STD_VER > 14
 
 #endif // _LIBCPP__EXPERIMENTAL_VARIANT

@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: c++98, c++03, c++11, c++14
+
 #include<experimental/variant>
 #include<string>
 #include<iostream>
