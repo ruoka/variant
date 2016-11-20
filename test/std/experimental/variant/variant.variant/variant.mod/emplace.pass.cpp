@@ -9,8 +9,10 @@
 //===----------------------------------------------------------------------===//
 
 #include <experimental/variant>
+#include <string>
 
 using std::experimental::variant;
+using std::experimental::get;
 
 static int count = 0;
 
@@ -20,7 +22,7 @@ struct foo
   ~foo(){++count;} // count == 2
 };
 
-int main()
+void test_basics()
 {
   variant<bool,foo> v{};
   assert(count == 0);
@@ -32,4 +34,19 @@ int main()
   assert(count == 3);
   v.emplace<bool>(true);
   assert(count == 4);
+}
+
+void test_odds()
+{
+  auto b = false;
+  variant<bool*,int&,double*,const std::string&> odd3{};
+  odd3.emplace<0>(&b);
+  assert(odd3.index() == 0);
+  assert(*get<0>(odd3) == b);
+}
+
+int main()
+{
+  test_basics();
+  test_odds();
 }

@@ -12,6 +12,8 @@
 #include <cassert>
 
 using std::experimental::variant;
+using std::experimental::bad_variant_access;
+using std::experimental::variant_npos;
 
 void test_ctor()
 {
@@ -39,8 +41,25 @@ void test_assign()
   assert(t1.index() == 2);
 }
 
+void test_valueless_by_exception()
+{
+  struct S { operator int() { throw 42; }};
+  variant<float, int> v{12.f};
+  assert(v.index() == 0);
+  assert(!v.valueless_by_exception());
+  try
+  {
+    v.emplace<1>(S());
+  }
+  catch(...)
+  {}
+  assert(v.index() == variant_npos);
+  assert(v.valueless_by_exception());
+}
+
 int main()
 {
   test_ctor();
   test_assign();
+  test_valueless_by_exception();
 }

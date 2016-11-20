@@ -13,6 +13,7 @@
 #include <cassert>
 
 using std::experimental::variant;
+using std::experimental::get;
 
 struct foo
 {
@@ -50,7 +51,26 @@ void test_type_traits()
   static_assert(!std::is_nothrow_constructible_v<variant<std::string,std::string>,const char*>);
 }
 
+void test_odds()
+{
+  auto i = 13;
+  variant<bool*,int&,double*,std::string&> odd1{std::in_place_type<int&>, i};
+  assert(odd1.index() == 1);
+  assert(get<1>(odd1) == i);
+
+  const auto str = std::string{"Jee!"};
+  variant<bool*,int&,double*,const std::string&> odd2{std::in_place_type<const std::string&>, str};
+  assert(odd2.index() == 3);
+  assert(get<3>(odd2) == str);
+
+  auto b = false;
+  variant<bool*,int&,double*,const std::string&> odd3{std::in_place_type<bool*>, &b};
+  assert(odd3.index() == 0);
+  assert(*get<0>(odd3) == b);
+}
+
 int main()
 {
   test_type_traits();
+  test_odds();
 }

@@ -193,6 +193,17 @@ public:
 #include <functional>
 #include <cassert>
 
+_LIBCPP_BEGIN_NAMESPACE_EXPERIMENTAL
+
+// 20.7.10, class bad_variant_access
+class _LIBCPP_EXCEPTION_ABI bad_variant_access : logic_error {
+public:
+  bad_variant_access() : logic_error{"Bad variant Access"} {};
+  virtual ~bad_variant_access() noexcept {};
+};
+
+_LIBCPP_END_NAMESPACE_EXPERIMENTAL
+
 _LIBCPP_BEGIN_NAMESPACE_LFTS
 
 #if _LIBCPP_STD_VER > 14
@@ -240,6 +251,20 @@ template <>
 union __variant_storage<void,__trivial>
 {
   constexpr __variant_storage() = default;
+};
+
+template <class _Type>
+union __variant_storage<_Type&,__trivial>
+{
+  reference_wrapper<remove_reference_t<_Type>> m_type;
+
+  constexpr __variant_storage() : m_type{}
+  {}
+
+  template<class... _Args>
+  constexpr __variant_storage(in_place_type_t<_Type&>, _Args&&... __args) :
+    m_type{forward<_Args>(__args)...}
+  {}
 };
 
 template <class _Type>
@@ -436,7 +461,7 @@ protected:
   {
     assert(__m_index == variant_npos);
     new(&__m_storage) decay_t<_T>{forward<_Args>(__args) ...};
-    __m_index = __variant_index_v<decay_t<_T>, _Types...>;
+    __m_index = __variant_index_v<_T, _Types...>;
   };
 
   template <class _Alloc,
@@ -448,7 +473,7 @@ protected:
   {
     assert(__m_index == variant_npos);
     new(&__m_storage) decay_t<_T>{allocator_arg, __a, forward<_Args>(__args) ...};
-    __m_index = __variant_index_v<decay_t<_T>, _Types...>;
+    __m_index = __variant_index_v<_T, _Types...>;
   };
 
   template <class _Alloc,
@@ -460,7 +485,7 @@ protected:
   {
     assert(__m_index == variant_npos);
     new(&__m_storage) decay_t<_T>{forward<_Args>(__args) ...,  __a};
-    __m_index = __variant_index_v<decay_t<_T>, _Types...>;
+    __m_index = __variant_index_v<_T, _Types...>;
   };
 
   template <class _Alloc,
@@ -473,7 +498,7 @@ protected:
   {
     assert(__m_index == variant_npos);
     new(&__m_storage) decay_t<_T>{forward<_Args>(__args) ...};
-    __m_index = __variant_index_v<decay_t<_T>, _Types...>;
+    __m_index = __variant_index_v<_T, _Types...>;
   };
 
 private:
@@ -612,7 +637,7 @@ protected:
   template <class _T, class... _Args>
   constexpr __variant_base(in_place_type_t<_T>, _Args&&... __args) :
     __m_storage{in_place_type<_T>, forward<_Args>(__args) ...},
-    __m_index{__variant_index_v<decay_t<_T>, _Types...>}
+    __m_index{__variant_index_v<_T, _Types...>}
   {}
 
   template <class _T, class... _Args>
@@ -620,7 +645,7 @@ protected:
   {
     assert(__m_index == variant_npos);
     new(&__m_storage) remove_reference_t<_T>{forward<_Args>(__args) ...};
-    __m_index = __variant_index_v<decay_t<_T>, _Types...>;
+    __m_index = __variant_index_v<_T, _Types...>;
   };
 
 private:
@@ -750,7 +775,7 @@ protected:
       unless is_copy_constructible_v<_Ti> is true for all i.)");
     if(__v.__m_index != variant_npos)
     {
-      __move(__v);
+      __move(forward<__variant_base>(__v));
       __v.__m_index = variant_npos;
     }
   }
@@ -787,6 +812,7 @@ protected:
       __copy(__v);
   }
 
+  __variant_base(__variant_base&&) = default;
   __variant_base& operator=(const __variant_base&) = default;
   __variant_base& operator=(__variant_base&&) = default;
 };
@@ -889,12 +915,6 @@ struct variant_alternative<_I, variant<_Types...>>
   using type = tuple_element_t<_I, tuple<_Types...>>;
 };
 
-// 20.7.10, class bad_variant_access
-class _LIBCPP_EXCEPTION_ABI bad_variant_access : logic_error {
-public:
-  bad_variant_access() : logic_error{"bad variant access"} {};
-};
-
 // 20.7.4, value access
 template <class _T, class... _Types>
 _LIBCPP_INLINE_VISIBILITY
@@ -944,6 +964,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr _T&
 get(variant<_Types...>& __v)
 {
+  static_assert(__count_v<_T, _Types...> > 0, "_Type is not an alternative");
   if(holds_alternative<_T>(__v))
   return __v.__m_storage.template get<_T>();
   throw bad_variant_access{};
@@ -954,6 +975,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr _T&&
 get(variant<_Types...>&& __v)
 {
+  static_assert(__count_v<_T, _Types...> > 0, "_Type is not an alternative");
   if(holds_alternative<_T>(__v))
   return __v.__m_storage.template get<_T>();
   throw bad_variant_access{};
@@ -964,6 +986,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr const _T&
 get(const variant<_Types...>& __v)
 {
+  static_assert(__count_v<_T, _Types...> > 0, "_Type is not an alternative");
   if(holds_alternative<_T>(__v))
   return __v.__m_storage.template get<_T>();
   throw bad_variant_access{};
@@ -974,6 +997,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr const _T&&
 get(const variant<_Types...>&& __v)
 {
+  static_assert(__count_v<_T, _Types...> > 0, "_Type is not an alternative");
   if(holds_alternative<_T>(__v))
   return __v.__m_storage.template get<_T>();
   throw bad_variant_access{};
@@ -1002,6 +1026,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr add_pointer_t<_T>
 get_if(variant<_Types...>* __v) noexcept
 {
+  static_assert(__count_v<_T, _Types...> > 0, "_Type is not an alternative");
   if(holds_alternative<_T>(*__v))
   return &(__v->__m_storage.template get<_T>());
   return nullptr;
@@ -1012,6 +1037,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr add_pointer_t<const _T>
 get_if(const variant<_Types...>* __v) noexcept
 {
+  static_assert(__count_v<_T, _Types...> > 0, "_Type is not an alternative");
   if(holds_alternative<_T>(*__v))
   return &(__v->__m_storage.template get<_T>());
   return nullptr;
@@ -1475,6 +1501,8 @@ public:
   _LIBCPP_INLINE_VISIBILITY
   void emplace(_Args&&... __args)
   {
+    static_assert(__count_v<_T, _Types...> > 0, "_Type is not an alternative");
+    static_assert(!is_lvalue_reference_v<_T>, "references cannot be reassigned");
     if(!valueless_by_exception())
       __destroy();
     __construct(in_place_type<_T>, forward<_Args>(__args)...);
@@ -1484,6 +1512,8 @@ public:
   _LIBCPP_INLINE_VISIBILITY
   void emplace(initializer_list<_U> __il, _Args&&... __args)
   {
+    static_assert(__count_v<_T, _Types...> > 0, "_Type is not an alternative");
+    static_assert(!is_lvalue_reference_v<_T>, "references cannot be reassigned");
     if(!valueless_by_exception())
       __destroy();
     __construct(in_place_type<_T>, __il, forward<_Args>(__args)...);
@@ -1574,8 +1604,8 @@ struct hash<_VSTD_LFTS::monostate>
 template <class... _Types, class _Alloc>
 struct uses_allocator<_VSTD_LFTS::variant<_Types...>, _Alloc> : true_type {};
 
-_LIBCPP_END_NAMESPACE_STD
-
 #endif // _LIBCPP_STD_VER > 14
+
+_LIBCPP_END_NAMESPACE_STD
 
 #endif // _LIBCPP__EXPERIMENTAL_VARIANT

@@ -14,6 +14,7 @@
 
 using std::experimental::variant;
 using std::experimental::get;
+using std::experimental::holds_alternative;
 
 void test_copy_assign()
 {
@@ -58,9 +59,43 @@ void test_alternative_assign()
   assert(get<3>(v)      == 21.12);
 }
 
+void test_pointer_assignent()
+{
+  auto v = variant<int*,bool*,std::string*,double*>{};
+  auto i = 13;
+  auto b = false;
+  auto str = std::string{"TEST123"};
+  auto d = 21.12;
+
+  v = &i;
+  assert(v.index() == 0);
+  assert(holds_alternative<int*>(v));
+  assert(*get<int*>(v) == i);
+  assert(*get<0>(v)    == i);
+
+  v = &b;
+  assert(v.index() == 1);
+  assert(holds_alternative<bool*>(v));
+  assert(*get<bool*>(v) == b);
+  assert(*get<1>(v)     == b);
+
+  v = &str;
+  assert(v.index() == 2);
+  assert(holds_alternative<std::string*>(v));
+  assert(*get<std::string*>(v) == str);
+  assert(*get<2>(v)            == str);
+
+  v = &d;
+  assert(v.index() == 3);
+  assert(holds_alternative<double*>(v));
+  assert(*get<double*>(v) == d);
+  assert(*get<3>(v)      == d);
+}
+
 int main()
 {
   test_copy_assign();
   test_move_assign();
   test_alternative_assign();
+  test_pointer_assignent();
 }

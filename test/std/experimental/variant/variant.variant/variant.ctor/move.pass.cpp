@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <experimental/variant>
-#include <iostream>
+#include <string>
 #include <cassert>
 
 using std::experimental::variant;
@@ -41,15 +41,19 @@ void test_type_traits()
 
 void test_constructors()
 {
-  variant<int,bool,double> v1{2.2};
+  auto v1 = variant<int,bool,double,std::string>{2.2};
   assert(v1.index() == 2);
   assert(holds_alternative<double>(v1));
 
-  variant<int,bool,double> v2{std::move(v1)};
+  auto v2 = variant<int,bool,double,std::string>{std::move(v1)};
   assert(v2.index() == 2);
   assert(holds_alternative<double>(v2));
 
-  std::cout << v1.index() << " vs " << variant_npos << std::endl;
+  assert(v1.index() == variant_npos);
+
+  auto vola = variant<bool,bool,volatile int>{33};
+  assert(vola.index() == 2);
+  assert(holds_alternative<volatile int>(vola));
 }
 
 int main()
