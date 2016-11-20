@@ -681,7 +681,7 @@ protected:
                   conjunction_v<is_move_assignable   <_Types> ...> ,
       R"(This function shall not participate in overload resolution
       unless is_move_constructible_v<_Ti> && s_move_assignable_v<_Ti> is true for all i.)");
-    if(!(__m_index == variant_npos))
+    if(__m_index != variant_npos)
       __destroy();
     if(__rhs.__m_index != variant_npos)
       __move(move(__rhs));
@@ -715,7 +715,7 @@ protected:
       R"(This function shall not participate in overload resolution
       unless is_copy_constructible_v<_Ti> && is_move_constructible_v<_Ti> &&
       is_copy_assignable_v<_Ti> is true for all i.)");
-    if(!(__m_index == variant_npos))
+    if(__m_index != variant_npos)
       __destroy();
     if(__rhs.__m_index != variant_npos)
       __copy(__rhs);
@@ -748,8 +748,11 @@ protected:
     static_assert(conjunction_v<is_copy_constructible<_Types> ...>,
       R"(This function shall not participate in overload resolution
       unless is_copy_constructible_v<_Ti> is true for all i.)");
-    __move(__v);
-    __v.__m_index = variant_npos;
+    if(__v.__m_index != variant_npos)
+    {
+      __move(__v);
+      __v.__m_index = variant_npos;
+    }
   }
 
   __variant_base& operator=(const __variant_base&) = default;
@@ -780,7 +783,8 @@ protected:
     static_assert(conjunction_v<is_move_constructible<_Types> ...>,
       R"(This function shall not participate in overload resolution
       unless is_move_constructible_v<_Ti> is true for all i.)");
-    __copy(__v);
+    if(__v.__m_index != variant_npos)
+      __copy(__v);
   }
 
   __variant_base& operator=(const __variant_base&) = default;
