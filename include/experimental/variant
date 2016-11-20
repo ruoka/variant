@@ -413,7 +413,7 @@ class __variant_base; // undefined
 // Non_TiviallyDestructible Specialisation
 
 template <class... _Types>
-class __variant_base<false,false,false,false,false,_Types...>
+class __variant_base<false,false,false,false,false, _Types...>
 {
 public:
 
@@ -538,7 +538,7 @@ protected:
     assert(__v.__m_index < sizeof...(_Types));
     assert(__m_index == variant_npos);
     using function = void(__variant_base::*)(allocator_arg_t, const _Alloc&, const __variant_base&);
-    constexpr function __array[sizeof...(_Types)] = {&__variant_base::__private_copy<_Alloc,_Types> ...};
+    constexpr function __array[sizeof...(_Types)] = {&__variant_base::__private_copy<_Alloc, _Types> ...};
     (this->*__array[__v.__m_index])(allocator_arg, __a, __v);
   }
 
@@ -578,7 +578,7 @@ protected:
     assert(__v.__m_index < sizeof...(_Types));
     assert(__m_index == variant_npos);
     using function = void(__variant_base::*)(allocator_arg_t, const _Alloc&, __variant_base&&);
-    constexpr function __array[sizeof...(_Types)] = {&__variant_base::__private_move<_Alloc,_Types> ...};
+    constexpr function __array[sizeof...(_Types)] = {&__variant_base::__private_move<_Alloc, _Types> ...};
     (this->*__array[__v.__m_index])(allocator_arg, __a, forward<__variant_base>(__v));
     __v.__m_index = variant_npos;
   }
@@ -615,7 +615,7 @@ protected:
 // _TiviallyDestructible Specialisation
 
 template <class... _Types>
-class __variant_base<false,false,false,false,true,_Types...>
+class __variant_base<false,false,false,false,true, _Types...>
 {
 public:
 
@@ -884,7 +884,7 @@ struct __is_imaginary_function_well_formed :
 
 template <class _T, class... _Types>
 constexpr bool __is_imaginary_function_well_formed_v =
-  __is_imaginary_function_well_formed<_T,_Types...>::value;
+  __is_imaginary_function_well_formed<_T, _Types...>::value;
 
 // 20.7.2, variant of value types
 template <class... _Types>
@@ -930,7 +930,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr variant_alternative_t<_I, variant<_Types...>>&
 get(variant<_Types...>& __v)
 {
-  using _T = variant_alternative_t<_I,variant<_Types...>>;
+  using _T = variant_alternative_t<_I, variant<_Types...>>;
   return get<_T>(__v);
 };
 
@@ -939,7 +939,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr variant_alternative_t<_I, variant<_Types...>>&&
 get(variant<_Types...>&& __v)
 {
-  using _T = variant_alternative_t<_I,variant<_Types...>>;
+  using _T = variant_alternative_t<_I, variant<_Types...>>;
   return move(get<_T>(__v));
 };
 
@@ -948,7 +948,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr variant_alternative_t<_I, variant<_Types...>> const&
 get(const variant<_Types...>& __v)
 {
-  using _T = variant_alternative_t<_I,variant<_Types...>>;
+  using _T = variant_alternative_t<_I, variant<_Types...>>;
   return get<_T>(__v);
 };
 
@@ -957,7 +957,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr variant_alternative_t<_I, variant<_Types...>> const&&
 get(const variant<_Types...>&& __v)
 {
-  using _T = variant_alternative_t<_I,variant<_Types...>>;
+  using _T = variant_alternative_t<_I, variant<_Types...>>;
   return move(get<_T>(__v));
 };
 
@@ -1010,7 +1010,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr add_pointer_t<variant_alternative_t<_I, variant<_Types...>>>
 get_if(variant<_Types...>* __v) noexcept
 {
-  using _T = variant_alternative_t<_I,variant<_Types...>>;
+  using _T = variant_alternative_t<_I, variant<_Types...>>;
   return get_if<_T>(__v);
 };
 
@@ -1019,7 +1019,7 @@ _LIBCPP_INLINE_VISIBILITY
 constexpr add_pointer_t<const variant_alternative_t<_I, variant<_Types...>>>
 get_if(const variant<_Types...>* __v) noexcept
 {
-  using _T = variant_alternative_t<_I,variant<_Types...>>;
+  using _T = variant_alternative_t<_I, variant<_Types...>>;
   return get_if<_T>(__v);
 };
 
@@ -1285,10 +1285,10 @@ public:
   variant(variant&&) = default;
 
   template <class _T,
-            class _Tj = __imaginary_function_argument_t<_T,_Types...>,
+            class _Tj = __imaginary_function_argument_t<_T, _Types...>,
             enable_if_t<conjunction_v<negation<is_same<decay_t<_T>,variant>>,
                                       is_constructible<_Tj, _T>,
-                                      __is_imaginary_function_well_formed<_Tj,_Types...>>,int> = 0
+                                      __is_imaginary_function_well_formed<_Tj, _Types...>>,int> = 0
             >
   _LIBCPP_INLINE_VISIBILITY
   constexpr
@@ -1297,7 +1297,7 @@ public:
   {
     static_assert(!is_same_v<decay_t<_T>,variant> &&
                   is_constructible_v<_Tj, _T> &&
-                  __is_imaginary_function_well_formed_v<_Tj,_Types...>,
+                  __is_imaginary_function_well_formed_v<_Tj, _Types...>,
       R"(This function shall not participate in overload resolution
       unless is_same_v<decay_t<_T>, variant> is false,
       unless is_constructible_v<_Tj, _T> is true, and
@@ -1329,7 +1329,7 @@ public:
 
   template <size_t _I,
             class... _Args,
-            class _T = variant_alternative_t<_I,variant>,
+            class _T = variant_alternative_t<_I, variant>,
             enable_if_t<is_constructible_v<_T, _Args...>, int> = 0
             >
   _LIBCPP_INLINE_VISIBILITY
@@ -1341,7 +1341,7 @@ public:
   template <size_t _I,
             class _U,
             class... _Args,
-            class _Ti = variant_alternative_t<_I,variant>,
+            class _Ti = variant_alternative_t<_I, variant>,
             enable_if_t<is_constructible_v<_Ti, initializer_list<_U>&, _Args...>, int> = 0
             >
   _LIBCPP_INLINE_VISIBILITY
@@ -1395,10 +1395,10 @@ public:
 
   template <class _Alloc,
             class _T,
-            class _Tj = __imaginary_function_argument_t<_T,_Types...>,
+            class _Tj = __imaginary_function_argument_t<_T, _Types...>,
             enable_if_t<conjunction_v<negation<is_same<decay_t<_T>,variant>>,
                                              is_constructible<_Tj, _T>,
-                                             __is_imaginary_function_well_formed<_Tj,_Types...>>,int> = 0
+                                             __is_imaginary_function_well_formed<_Tj, _Types...>>,int> = 0
             >
   _LIBCPP_INLINE_VISIBILITY
   variant(allocator_arg_t, const _Alloc& __a, _T&&  __t) :
@@ -1406,7 +1406,7 @@ public:
   {
     static_assert(!is_same_v<decay_t<_T>,variant> &&
                   is_constructible_v<_Tj, _T> &&
-                  __is_imaginary_function_well_formed_v<_Tj,_Types...>,
+                  __is_imaginary_function_well_formed_v<_Tj, _Types...>,
       R"(This function shall not participate in overload resolution
       unless is_same_v<decay_t<_T>, variant> is false,
       unless is_constructible_v<_Tj, _T> is true, and
@@ -1441,7 +1441,7 @@ public:
   template <class _Alloc,
             size_t _I,
             class... _Args,
-            class _T = variant_alternative_t<_I,variant>,
+            class _T = variant_alternative_t<_I, variant>,
             enable_if_t<is_constructible_v<_T, _Args...>, int> = 0
             >
   _LIBCPP_INLINE_VISIBILITY
@@ -1453,7 +1453,7 @@ public:
             size_t _I,
             class _U,
             class... _Args,
-            class _T = variant_alternative_t<_I,variant>,
+            class _T = variant_alternative_t<_I, variant>,
             enable_if_t<is_constructible_v<_T, initializer_list<_U>&, _Args...>, int> = 0
             >
   _LIBCPP_INLINE_VISIBILITY
@@ -1473,20 +1473,20 @@ public:
   variant& operator=(variant&&) = default;
 
   template <class _T,
-            class _Tj = __imaginary_function_argument_t<_T,_Types...>,
+            class _Tj = __imaginary_function_argument_t<_T, _Types...>,
             enable_if_t<conjunction_v<negation<is_same<decay_t<_T>,variant>>,
                                       is_assignable_v<_Tj&, _T>,
                                       is_constructible<_Tj, _T>,
-                                      __is_imaginary_function_well_formed<_Tj,_Types...>>,int> = 0
+                                      __is_imaginary_function_well_formed<_Tj, _Types...>>,int> = 0
             >
   _LIBCPP_INLINE_VISIBILITY
   variant& operator=(_T&& __rhs)
-    noexcept(conjunction_v<is_nothrow_assignable<_Types&,_Types>...,
-                           is_nothrow_constructible<_Types&,_Types>...>)
+    noexcept(conjunction_v<is_nothrow_assignable<_Types&, _Types>...,
+                           is_nothrow_constructible<_Types&, _Types>...>)
   {
     static_assert(!is_same_v<decay_t<_T>, variant> &&
                   is_assignable_v<_Tj&, _T> && is_constructible_v<_Tj, _T> &&
-                  __is_imaginary_function_well_formed_v<_Tj,_Types...>,
+                  __is_imaginary_function_well_formed_v<_Tj, _Types...>,
       R"(This function shall not participate in overload resolution
          unless is_same_v<decay_t<_T>, variant> is false,
          unless is_assignable_v<_Tj&, _T> && is_constructible_v<_Tj, _T> is true, and
@@ -1526,7 +1526,7 @@ public:
   _LIBCPP_INLINE_VISIBILITY
   void emplace(_Args&&... __args)
   {
-    using _T = variant_alternative_t<_I,variant>;
+    using _T = variant_alternative_t<_I, variant>;
     emplace<_T>(forward<_Args>(__args)...);
   };
 
@@ -1534,7 +1534,7 @@ public:
   _LIBCPP_INLINE_VISIBILITY
   void emplace(initializer_list<_U> __il, _Args&&... __args)
   {
-    using _T = variant_alternative_t<_I,variant>;
+    using _T = variant_alternative_t<_I, variant>;
     emplace<_T>(__il, forward<_Args>(__args)...);
   };
 
