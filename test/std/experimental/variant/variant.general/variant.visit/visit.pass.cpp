@@ -8,11 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include<experimental/variant>
-#include<string>
+#include <experimental/variant>
+#include <string>
+#include <chrono>
 #include <iostream>
 
 using std::experimental::variant;
+using std::experimental::monostate;
 using std::experimental::visit;
 
 using test = variant<bool,int,double,std::string>;
@@ -90,8 +92,26 @@ void test_lambda()
     assert(call == "xxxx");
 }
 
+void test_complex()
+{
+    using type = variant<monostate,
+                          std::nullptr_t,
+                          double,
+                          std::string,
+                          bool,
+                          std::chrono::system_clock::time_point,
+                          long,
+                          long long
+                          >;
+
+    auto value = type{};
+
+    visit([](const auto& arg){return "pöö";}, value);
+}
+
 int main()
 {
     test_functor();
     test_lambda();
+    test_complex();
 }

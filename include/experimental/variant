@@ -130,6 +130,8 @@ _LIBCPP_BEGIN_NAMESPACE_LFTS
 
 #if _LIBCPP_STD_VER > 14
 
+constexpr size_t variant_npos = -1;
+
 template <class Type, class... Types>
 union __variant_storage; // undefined
 
@@ -317,7 +319,7 @@ public:
 
 protected:
 
-    ptrdiff_t m_index = -1;
+    size_t m_index = variant_npos;
 
     __variant_base(const __variant_base&) = delete;
     __variant_base(__variant_base&&) = delete;
@@ -326,13 +328,13 @@ protected:
 
     __variant_base() :
         m_storage{},
-        m_index{-1}
+        m_index{variant_npos}
     {}
 
     template <class T, class... Args>
     __variant_base(in_place_type_t<T>, Args&&... args) :
         m_storage{},
-        m_index{-1}
+        m_index{variant_npos}
     {
         __construct(in_place_type<T>, forward<Args>(args) ...);
     }
@@ -340,14 +342,14 @@ protected:
     template <class Alloc, class T, class... Args>
     __variant_base(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args) :
         m_storage{},
-        m_index{-1}
+        m_index{variant_npos}
     {
         __construct(allocator_arg_t{}, a, in_place_type<T>, forward<Args>(args) ...);
     }
 
     ~__variant_base()
     {
-        if(m_index >= 0)
+        if(m_index != variant_npos)
             __destroy();
     }
 
@@ -357,7 +359,7 @@ protected:
               >
     void __construct(in_place_type_t<T>, Args&&... args)
     {
-        assert(m_index < 0);
+        assert(m_index == variant_npos);
         new(&m_storage) decay_t<T>{forward<Args>(args) ...};
         m_index = __variant_index_v<decay_t<T>, Types...>;
     };
@@ -369,7 +371,7 @@ protected:
               >
     void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
     {
-        assert(m_index < 0);
+        assert(m_index == variant_npos);
         new(&m_storage) decay_t<T>{allocator_arg_t{}, a, forward<Args>(args) ...};
         m_index = __variant_index_v<decay_t<T>, Types...>;
     };
@@ -381,7 +383,7 @@ protected:
               >
     void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
     {
-        assert(m_index < 0);
+        assert(m_index == variant_npos);
         new(&m_storage) decay_t<T>{forward<Args>(args) ..., a};
         m_index = __variant_index_v<decay_t<T>, Types...>;
     };
@@ -394,7 +396,7 @@ protected:
               >
     void __construct(allocator_arg_t, const Alloc& a, in_place_type_t<T>, Args&&... args)
     {
-        assert(m_index < 0);
+        assert(m_index == variant_npos);
         new(&m_storage) decay_t<T>{forward<Args>(args) ...};
         m_index = __variant_index_v<decay_t<T>, Types...>;
     };
@@ -419,9 +421,9 @@ protected:
 
     void __copy(const __variant_base& v)
     {
-        assert(v.m_index >= 0);
+        assert(v.m_index != variant_npos);
         assert(v.m_index < sizeof...(Types));
-        assert(m_index < 0);
+        assert(m_index == variant_npos);
         using function = void(__variant_base::*)(const __variant_base&);
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_copy<Types> ...};
         (this->*__array[v.m_index])(v);
@@ -430,9 +432,9 @@ protected:
     template <class Alloc>
     void __copy(allocator_arg_t, const Alloc& a, const __variant_base& v)
     {
-        assert(v.m_index >= 0);
+        assert(v.m_index != variant_npos);
         assert(v.m_index < sizeof...(Types));
-        assert(m_index < 0);
+        assert(m_index == variant_npos);
         using function = void(__variant_base::*)(allocator_arg_t, const Alloc&, const __variant_base&);
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_copy<Alloc,Types> ...};
         (this->*__array[v.m_index])(allocator_arg_t{}, a, v);
@@ -458,25 +460,25 @@ protected:
 
     void __move(__variant_base&& v)
     {
-        assert(v.m_index >= 0);
+        assert(v.m_index != variant_npos);
         assert(v.m_index < sizeof...(Types));
-        assert(m_index < 0);
+        assert(m_index == variant_npos);
         using function = void(__variant_base::*)(__variant_base&&);
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_move<Types> ...};
         (this->*__array[v.m_index])(forward<__variant_base>(v));
-        v.m_index = -1;
+        v.m_index = variant_npos;
     }
 
     template <class Alloc>
     void __move(allocator_arg_t, const Alloc& a, __variant_base&& v)
     {
-        assert(v.m_index >= 0);
+        assert(v.m_index != variant_npos);
         assert(v.m_index < sizeof...(Types));
-        assert(m_index < 0);
+        assert(m_index == variant_npos);
         using function = void(__variant_base::*)(allocator_arg_t, const Alloc&, __variant_base&&);
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_move<Alloc,Types> ...};
         (this->*__array[v.m_index])(allocator_arg_t{}, a, forward<__variant_base>(v));
-        v.m_index = -1;
+        v.m_index = variant_npos;
     }
 
 private:
@@ -484,23 +486,23 @@ private:
     template<class T, enable_if_t<is_class_v<decay_t<T>>,bool> = true>
     void __private_destroy()
     {
-        assert(m_index >= 0);
+        assert(m_index != variant_npos);
         reinterpret_cast<add_pointer_t<T>>(&m_storage)->~T();
-        m_index = -1;
+        m_index = variant_npos;
     };
 
     template<class T, enable_if_t<!is_class_v<decay_t<T>>,bool> = false>
     void __private_destroy()
     {
-        assert(m_index >= 0);
-        m_index = -1;
+        assert(m_index != variant_npos);
+        m_index = variant_npos;
     };
 
 protected:
 
     void __destroy()
     {
-        assert(m_index >= 0);
+        assert(m_index != variant_npos);
         assert(m_index < sizeof...(Types));
         using function = void(__variant_base::*)();
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_destroy<Types> ...};
@@ -519,7 +521,7 @@ public:
 
 protected:
 
-    ptrdiff_t m_index = -1;
+    size_t m_index = variant_npos;
 
     __variant_base(const __variant_base&) = delete;
     __variant_base(__variant_base&&) = delete;
@@ -529,7 +531,7 @@ protected:
 
     __variant_base() :
         m_storage{},
-        m_index{-1}
+        m_index{variant_npos}
     {}
 
     template <class T, class... Args>
@@ -541,7 +543,7 @@ protected:
     template <class T, class... Args>
     void __construct(in_place_type_t<T>, Args&&... args)
     {
-        assert(m_index < 0);
+        assert(m_index == variant_npos);
         new(&m_storage) remove_reference_t<T>{forward<Args>(args) ...};
         m_index = __variant_index_v<decay_t<T>, Types...>;
     };
@@ -558,8 +560,8 @@ protected:
 
     void __copy(const __variant_base& v)
     {
-        assert(v.m_index >= 0 && v.m_index < sizeof...(Types));
-        assert(m_index < 0);
+        assert(v.m_index != variant_npos && v.m_index < sizeof...(Types));
+        assert(m_index == variant_npos);
         using function = void(__variant_base::*)(const __variant_base&);
         constexpr function __array[sizeof...(Types)] = {&__variant_base::__private_copy<Types> ...};
         (this->*__array[v.m_index])(v);
@@ -568,13 +570,13 @@ protected:
     void __move(__variant_base&& v)
     {
         __copy(v);
-        v.m_index = -1;
+        v.m_index = variant_npos;
     }
 
     void __destroy()
     {
-        assert(m_index >= 0);
-        m_index = -1;
+        assert(m_index != variant_npos);
+        m_index = variant_npos;
     };
 };
 
@@ -601,9 +603,9 @@ protected:
                       conjunction_v<is_move_assignable   <Types> ...> ,
         R"(This function shall not participate in overload resolution unless is_move_constructible_v<Ti> &&
                                                                              is_move_assignable_v<Ti> is true for all i.)");
-        if(!(m_index < 0))
+        if(!(m_index == variant_npos))
             __destroy();
-        if(!(rhs.m_index < 0))
+        if(!(rhs.m_index == variant_npos))
             __move(move(rhs));
         return *this;
     }
@@ -634,9 +636,9 @@ protected:
         R"(This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> &&
                                                                              is_move_constructible_v<Ti> &&
                                                                              is_copy_assignable_v<Ti> is true for all i.)");
-        if(!(m_index < 0))
+        if(!(m_index == variant_npos))
             __destroy();
-        if(!(rhs.m_index < 0))
+        if(!(rhs.m_index == variant_npos))
             __copy(rhs);
         return *this;
     }
@@ -659,17 +661,15 @@ protected:
 
     using __base::__base;
     using __base::__move;
+    using __base::m_index;
 
     __variant_base(__variant_base&& v) :
         __base{}
     {
         static_assert(conjunction_v<is_copy_constructible<Types> ...>,
             "This function shall not participate in overload resolution unless is_copy_constructible_v<Ti> is true for all i.");
-        if(!(v.m_index < 0))
-        {
-            __move(v);
-            v.m_index = -1;
-        }
+        __move(v);
+        v.m_index = variant_npos;
     }
 
     __variant_base& operator=(const __variant_base&) = default;
@@ -698,8 +698,7 @@ protected:
     {
         static_assert(conjunction_v<is_move_constructible<Types> ...>,
             "This function shall not participate in overload resolution unless is_move_constructible_v<Ti> is true for all i.");
-        if(!(v.m_index < 0))
-            __copy(v);
+        __copy(v);
     }
 
     __variant_base& operator=(const __variant_base&) = default;
@@ -792,8 +791,6 @@ struct variant_alternative<I, variant<Types...>>
     static_assert(I < sizeof...(Types), "variant_alternative index out of range");
     using type = tuple_element_t<I, tuple<Types...>>;
 };
-
-constexpr size_t variant_npos = -1;
 
 // 20.7.10, class bad_variant_access
 class _LIBCPP_EXCEPTION_ABI bad_variant_access : logic_error {
