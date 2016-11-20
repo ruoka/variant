@@ -10,9 +10,9 @@
 
 // UNSUPPORTED: c++98, c++03, c++11, c++14
 
-#include<experimental/variant>
-#include<string>
-#include<iostream>
+#include <experimental/variant>
+#include <string>
+#include <vector>
 
 using std::experimental::variant;
 using std::experimental::get;
@@ -35,7 +35,6 @@ void test_move_assign()
 {
   variant<int,bool,std::string,double> v;
   v = variant<int,bool,std::string,double>{std::string{"rush"}};
-
   assert(get<std::string>(v) == "rush");
   assert(get<2>(v)           == "rush");
 }
@@ -59,6 +58,23 @@ void test_alternative_assign()
   v = 21.12;
   assert(get<double>(v) == 21.12);
   assert(get<3>(v)      == 21.12);
+
+  v = short{2};
+  assert(get<int>(v) == 2);
+  assert(get<0>(v)   == 2);
+}
+
+void test_string_assign()
+{
+  auto v1 = variant<std::vector<int>,std::string>{};
+  v1 = "Test 123 456?";
+  assert(get<std::string>(v1) == "Test 123 456?");
+  assert(get<1>(v1)           == "Test 123 456?");
+
+  auto v2 = variant<std::vector<std::string>,std::string>{};
+  v2 = "Test 123 456?";
+  assert(get<std::string>(v2) == "Test 123 456?");
+  assert(get<1>(v2)           == "Test 123 456?");
 }
 
 void test_pointer_assignent()
@@ -99,5 +115,6 @@ int main()
   test_copy_assign();
   test_move_assign();
   test_alternative_assign();
+  test_string_assign();
   test_pointer_assignent();
 }

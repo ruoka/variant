@@ -46,16 +46,16 @@ void test_type_traits()
   static_assert(!std::is_constructible_v<variant<int,bar>, std::allocator_arg_t, const std::allocator<char>&, variant<int,bar>&&>);
 }
 
-void test_constructors()
+void test_constructors_1()
 {
-  using variant = variant<bool,int,double,std::vector<int>,std::string>;
+  using variant = variant<bool,long,double,std::vector<int>,std::string>;
   std::allocator<char> a;
 
   variant v1{std::allocator_arg_t{}, a};
   assert(v1.index() == 0);
   assert(get<0>(v1) == false);
 
-  variant v2{std::allocator_arg_t{}, a, 1};
+  variant v2{std::allocator_arg_t{}, a, 1l};
   assert(v2.index() == 1);
   assert(get<1>(v2) == 1);
 
@@ -66,6 +66,7 @@ void test_constructors()
   variant v4{std::allocator_arg_t{}, a, std::in_place_type<std::vector<int>>, {1,2,3,4,5,6,7}};
   assert(v4.index() == 3);
   assert(get<3>(v4).size() == 7);
+  assert(get<3>(v4)[3] == 4);
 
   variant v5{std::allocator_arg_t{}, a, std::in_place_index<3>, {1,2,3,4,5,6,7,8}};
   assert(v5.index() == 3);
@@ -94,10 +95,33 @@ void test_constructors()
   variant v23{std::allocator_arg_t{}, a, std::move(v3)};
   assert(v23.index() == 2);
   assert(get<2>(v23) == 2.2);
+
+  variant v30{std::allocator_arg_t{}, a, std::string{"test"}};
+  assert(v30.index() == 4);
+  assert(get<4>(v30) == "test");
+}
+
+void test_constructors_2()
+{
+  using variant = variant<long long,std::vector<int>,std::string>;
+  std::allocator<char> a;
+
+  variant v31{std::allocator_arg_t{}, a, short{31}};
+  assert(v31.index() == 0);
+  assert(get<0>(v31) == 31);
+
+  variant v32{std::allocator_arg_t{}, a, int{32}};
+  assert(v32.index() == 0);
+  assert(get<0>(v32) == 32);
+
+  variant v33{std::allocator_arg_t{}, a, unsigned{33}};
+  assert(v33.index() == 0);
+  assert(get<0>(v33) == 33);
 }
 
 int main()
 {
   test_type_traits();
-  test_constructors();
+  test_constructors_1();
+  test_constructors_2();
 }

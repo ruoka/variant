@@ -1286,9 +1286,9 @@ public:
 
   template <class _T,
             class _Tj = __imaginary_function_argument_t<_T,_Types...>,
-            enable_if_t<!is_same_v<decay_t<_T>,variant>,int> = 0,
-            enable_if_t<is_constructible_v<_Tj, _T>,int> = 0,
-            enable_if_t<__is_imaginary_function_well_formed_v<_Tj,_Types...>,int> = 0
+            enable_if_t<conjunction_v<negation<is_same<decay_t<_T>,variant>>,
+                                      is_constructible<_Tj, _T>,
+                                      __is_imaginary_function_well_formed<_Tj,_Types...>>,int> = 0
             >
   _LIBCPP_INLINE_VISIBILITY
   constexpr
@@ -1301,8 +1301,8 @@ public:
       R"(This function shall not participate in overload resolution
       unless is_same_v<decay_t<_T>, variant> is false,
       unless is_constructible_v<_Tj, _T> is true, and
-      unless the expression F_UN(std::forward<_T>(__t))
-      (with F_UN being the above-mentioned set of imaginary functions)
+      unless the expression FUN(std::forward<_T>(__t))
+      (with FUN being the above-mentioned set of imaginary functions)
       is well formed.)");
   };
 
@@ -1402,7 +1402,7 @@ public:
             >
   _LIBCPP_INLINE_VISIBILITY
   variant(allocator_arg_t, const _Alloc& __a, _T&&  __t) :
-      __base{allocator_arg, __a, in_place_type<_T>, forward<_T>(__t)}
+      __base{allocator_arg, __a, in_place_type<_Tj>, forward<_T>(__t)}
   {
     static_assert(!is_same_v<decay_t<_T>,variant> &&
                   is_constructible_v<_Tj, _T> &&
@@ -1410,8 +1410,8 @@ public:
       R"(This function shall not participate in overload resolution
       unless is_same_v<decay_t<_T>, variant> is false,
       unless is_constructible_v<_Tj, _T> is true, and
-      unless the expression F_UN( std::forward<_T>(__t))
-      (with F_UN being the above-mentioned set of imaginary functions)
+      unless the expression FUN( std::forward<_T>(__t))
+      (with FUN being the above-mentioned set of imaginary functions)
       is well formed.)");
   };
 
@@ -1474,9 +1474,10 @@ public:
 
   template <class _T,
             class _Tj = __imaginary_function_argument_t<_T,_Types...>,
-            enable_if_t<!is_same_v<decay_t<_T>,variant>,int> = 0,
-            enable_if_t<conjunction_v<is_assignable_v<_Tj&, _T>, is_constructible_v<_Tj, _T>>,int> = 0,
-            enable_if_t<__is_imaginary_function_well_formed_v<_Tj,_Types...>,int> = 0
+            enable_if_t<conjunction_v<negation<is_same<decay_t<_T>,variant>>,
+                                      is_assignable_v<_Tj&, _T>,
+                                      is_constructible<_Tj, _T>,
+                                      __is_imaginary_function_well_formed<_Tj,_Types...>>,int> = 0
             >
   _LIBCPP_INLINE_VISIBILITY
   variant& operator=(_T&& __rhs)
@@ -1489,8 +1490,8 @@ public:
       R"(This function shall not participate in overload resolution
          unless is_same_v<decay_t<_T>, variant> is false,
          unless is_assignable_v<_Tj&, _T> && is_constructible_v<_Tj, _T> is true, and
-         unless the expression F_UN (std::forward<_T>(__t))
-         (with F_UN being the above-mentioned set of imaginary functions) is well formed.)");
+         unless the expression FUN (std::forward<_T>(__t))
+         (with FUN being the above-mentioned set of imaginary functions) is well formed.)");
     if(!valueless_by_exception())
       __destroy();
     __construct(in_place_type<_Tj>, forward<_T>(__rhs));
