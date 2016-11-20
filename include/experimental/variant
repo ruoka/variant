@@ -927,7 +927,7 @@ template <class... Types>
 using __comparison_function_type = bool(*)(const variant<Types...>&, const variant<Types...>&);
 
 template <size_t I, class... Types>
-constexpr bool __equal_to(const variant<Types...>& v, const variant<Types...>& w)
+constexpr bool __variant_equal_to(const variant<Types...>& v, const variant<Types...>& w)
 {
     return get<I>(v) == get<I>(w);
 }
@@ -935,11 +935,11 @@ constexpr bool __equal_to(const variant<Types...>& v, const variant<Types...>& w
 template <class... Types, size_t... I>
 constexpr array<__comparison_function_type<Types...>, sizeof...(I)> __make_equal_to_array(index_sequence<I...>)
 {
-    return { __equal_to<I, Types...> ... };
+    return { __variant_equal_to<I, Types...> ... };
 }
 
 template <size_t I, class... Types>
-constexpr bool __less(const variant<Types...>& v, const variant<Types...>& w)
+constexpr bool __variant_less(const variant<Types...>& v, const variant<Types...>& w)
 {
     return get<I>(v) < get<I>(w);
 }
@@ -947,7 +947,7 @@ constexpr bool __less(const variant<Types...>& v, const variant<Types...>& w)
 template <class... Types, size_t... I>
 constexpr array<__comparison_function_type<Types...>, sizeof...(I)> __make_less_array(index_sequence<I...>)
 {
-    return { __less<I, Types...> ... };
+    return { __variant_less<I, Types...> ... };
 }
 
 template <class Visitor, class... Variants>
@@ -1008,8 +1008,8 @@ template <class... Types>
 _LIBCPP_INLINE_VISIBILITY
 constexpr bool operator==(const variant<Types...>& v, const variant<Types...>& w)
 {
-    constexpr auto __equal_to = __make_equal_to_array<Types...>(index_sequence_for<Types...>{});
-    return (v.valueless_by_exception() && w.valueless_by_exception()) || (v.index() == w.index() && __equal_to[v.index()](v,w));
+    constexpr auto __variant_equal_to = __make_equal_to_array<Types...>(index_sequence_for<Types...>{});
+    return (v.valueless_by_exception() && w.valueless_by_exception()) || (v.index() == w.index() && __variant_equal_to[v.index()](v,w));
 };
 
 template <class... Types>
@@ -1023,8 +1023,8 @@ template <class... Types>
 _LIBCPP_INLINE_VISIBILITY
 constexpr bool operator<(const variant<Types...>& v, const variant<Types...>& w)
 {
-    constexpr auto __less = __make_less_array<Types...>(index_sequence_for<Types...>{});
-    return (v.index() < w.index()) || (v.index() == w.index() && !v.valueless_by_exception() && __less[v.index()](v,w));
+    constexpr auto __variant_less = __make_less_array<Types...>(index_sequence_for<Types...>{});
+    return (v.index() < w.index()) || (v.index() == w.index() && !v.valueless_by_exception() && __variant_less[v.index()](v,w));
 };
 
 template <class... Types>
