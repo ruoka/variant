@@ -1,46 +1,49 @@
+// UNSUPPORTED: c++98, c++03, c++11, c++14
+
 #include <variant>
 #include <cassert>
 
 using std::variant;
 using std::get;
+using std::bad_variant_access;
 
 int main()
 {
-    try
-    {
-        variant<unsigned,double,char> v{9u};
-        get<char>(v);
-        assert(false);
-    }
-    catch(std::bad_variant_access& bad)
-    {}
+  try
+  {
+    variant<unsigned,double,char> v{9u};
+    get<char>(v);
+    assert(false);
+  }
+  catch(bad_variant_access& bad)
+  {}
 
     try
     {
-        variant<unsigned,double,char> v{9u};
-        get<2>(v);
-        assert(false);
+      variant<unsigned,double,char> v{9u};
+      get<2>(v);
+      assert(false);
     }
-    catch(std::bad_variant_access& bad)
+    catch(bad_variant_access& bad)
     {}
 
-    try
-    {
+      try
+      {
         variant<unsigned,double,char> v{9u};
         get<unsigned>(v);
-    }
-    catch(std::bad_variant_access& bad)
-    {
+      }
+      catch(bad_variant_access& bad)
+      {
         assert(false);
-    }
+      }
 
-    try
-    {
+      try
+      {
         variant<unsigned,double,char> v{9u};
         get<0>(v);
-    }
-    catch(std::bad_variant_access& bad)
-    {
+      }
+      catch(bad_variant_access& bad)
+      {
         assert(false);
+      }
     }
-}
