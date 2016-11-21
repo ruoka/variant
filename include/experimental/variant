@@ -1574,6 +1574,14 @@ public:
   }
 };
 
+template<>
+class variant<>
+{
+  variant() = delete;
+  variant(const variant&) = delete;
+  variant(variant&&) = delete;
+};
+
 _LIBCPP_END_NAMESPACE_LFTS
 
 _LIBCPP_BEGIN_NAMESPACE_STD
