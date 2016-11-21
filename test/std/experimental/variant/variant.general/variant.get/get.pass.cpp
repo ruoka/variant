@@ -118,7 +118,7 @@ void test_get_odds()
   auto vola1 = variant<bool,bool,volatile int>{33};
   assert(get<volatile int>(vola1) == 33);
 
-  variant<bool,const bool,const std::string> vola2{"Variant"};
+  variant<bool,const bool,const std::string> vola2{std::string{"Variant"}};
   assert(get<const std::string>(vola2) == std::string{"Variant"});
   assert(get<2>(vola2) == std::string{"Variant"});
 

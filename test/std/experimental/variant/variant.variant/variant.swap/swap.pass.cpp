@@ -22,7 +22,7 @@ int main()
 {
   variant<float,unsigned,foo,char> v1, v2;
   v1 = 123456u;
-  v2 = 'A';
+  v2 = char{'A'};
   assert(get<1>(v1) == 123456u);
   assert(get<3>(v2) == 'A');
   v1.swap(v2);
