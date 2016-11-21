@@ -176,7 +176,6 @@ public:
 
 */
 
-#include <experimental/__config>
 #include <tuple>
 #include <array>
 #include <utility>
@@ -898,7 +897,7 @@ template <size_t _I, class... _Types>
 struct variant_alternative<_I, variant<_Types...>>
 {
   static_assert(_I < sizeof...(_Types), "variant_alternative index out of range");
-  using type = tuple_element_t<_I, tuple<_Types...>>;
+  using type = tuple_element_t<_I, tuple<_Types...>>; // FIXME doesn't work for volatile types
 };
 
 // 20.7.4, value access
