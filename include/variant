@@ -719,6 +719,8 @@ protected:
   using __base::__m_index;
 
   __variant_base& operator=(const __variant_base& __rhs)
+    noexcept(conjunction_v<is_nothrow_copy_constructible<_Types>...,
+                           is_nothrow_copy_assignable<_Types>...   >)
   {
     static_assert(conjunction_v<is_copy_constructible<_Types>...,
                                 is_move_constructible<_Types>...,
@@ -753,7 +755,8 @@ protected:
   using __base::__move;
   using __base::__m_index;
 
-  __variant_base(__variant_base&& __v) :
+  __variant_base(__variant_base&& __v)
+    noexcept(conjunction_v<is_nothrow_move_constructible<_Types> ...>) :
       __base{}
   {
     static_assert(conjunction_v<is_copy_constructible<_Types> ...>,
@@ -788,7 +791,8 @@ protected:
   using __base::__base;
   using __base::__copy;
 
-  __variant_base(const __variant_base& __v) :
+  __variant_base(const __variant_base& __v)
+      noexcept(conjunction_v<is_nothrow_copy_constructible<_Types> ...>) :
       __base{}
   {
     static_assert(conjunction_v<is_move_constructible<_Types> ...>,
@@ -1211,8 +1215,8 @@ constexpr bool operator!=(monostate, monostate) noexcept {return false;};
 template <class... _Types>
 inline
 void swap(variant<_Types...>& __lhs, variant<_Types...>& __rhs)
-  noexcept(conjunction_v<is_nothrow_move_constructible<_Types> ...> &&
-           conjunction_v<is_nothrow_swappable<_Types> ...>)
+  noexcept(conjunction_v<is_nothrow_move_constructible<_Types> ...,
+                         is_nothrow_swappable<_Types> ...>)
 {
   __lhs.swap(__rhs);
 };
@@ -1259,7 +1263,7 @@ public:
             >
   inline
   constexpr
-  variant() noexcept(is_nothrow_default_constructible_v<_T0>) = delete;
+  variant() = delete;
 
   // We'll inherit the copy and move constructors from the __base
 

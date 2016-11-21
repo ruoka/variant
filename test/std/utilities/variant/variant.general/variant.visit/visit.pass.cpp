@@ -4,6 +4,7 @@
 #include <string>
 #include <chrono>
 #include <iostream>
+#include <cassert>
 
 using std::variant;
 using std::monostate;

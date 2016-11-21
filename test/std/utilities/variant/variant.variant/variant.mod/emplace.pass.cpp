@@ -2,6 +2,7 @@
 
 #include <variant>
 #include <string>
+#include <cassert>
 
 using std::variant;
 using std::get;

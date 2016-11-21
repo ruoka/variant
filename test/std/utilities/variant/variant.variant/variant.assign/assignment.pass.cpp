@@ -3,6 +3,7 @@
 #include <variant>
 #include <string>
 #include <vector>
+#include <cassert>
 
 using std::variant;
 using std::get;

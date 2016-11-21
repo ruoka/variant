@@ -10,7 +10,13 @@ using std::variant_npos;
 
 struct foo
 {
-  foo(foo&&) = default;
+  foo(foo&&) noexcept = default;
+};
+
+struct foo2
+{
+  foo2(foo2&&) noexcept(false)
+  {};
 };
 
 struct bar
@@ -20,10 +26,20 @@ struct bar
 
 void test_type_traits()
 {
-  static_assert(std::is_move_constructible_v<variant<foo>>);
-  static_assert(std::is_move_constructible_v<variant<int,bool,double,foo>>);
-  static_assert(std::is_move_constructible_v<variant<foo,int,bool,double>>);
-  static_assert(std::is_move_constructible_v<variant<int,foo,bool,double>>);
+  static_assert(std::is_nothrow_move_constructible_v<variant<foo>>);
+  static_assert(std::is_nothrow_move_constructible_v<variant<int,bool,double,foo>>);
+  static_assert(std::is_nothrow_move_constructible_v<variant<foo,int,bool,double>>);
+  static_assert(std::is_nothrow_move_constructible_v<variant<int,foo,bool,double>>);
+
+  static_assert(std::is_move_constructible_v<variant<foo,foo2>>);
+  static_assert(std::is_move_constructible_v<variant<int,bool,double,foo,foo2>>);
+  static_assert(std::is_move_constructible_v<variant<foo,foo2,int,bool,double>>);
+  static_assert(std::is_move_constructible_v<variant<int,foo,foo2,bool,double>>);
+
+  static_assert(!std::is_nothrow_move_constructible_v<variant<foo,foo2>>);
+  static_assert(!std::is_nothrow_move_constructible_v<variant<int,bool,double,foo,foo2>>);
+  static_assert(!std::is_nothrow_move_constructible_v<variant<foo,foo2,int,bool,double>>);
+  static_assert(!std::is_nothrow_move_constructible_v<variant<int,foo,foo2,bool,double>>);
 
   static_assert(!std::is_move_constructible_v<variant<bar>>);
   static_assert(!std::is_move_constructible_v<variant<int,bool,double,bar>>);
