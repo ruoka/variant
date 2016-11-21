@@ -1,13 +1,13 @@
 #include <iostream>
-#include <experimental/variant>
+#include <variant>
 
-using std::experimental::variant;
-using std::experimental::variant_size_v;
-using std::experimental::variant_alternative_t;
-using std::experimental::monostate;
-using std::experimental::holds_alternative;
-using std::experimental::get;
-using std::experimental::visit;
+using std::variant;
+using std::variant_size_v;
+using std::variant_alternative_t;
+using std::monostate;
+using std::holds_alternative;
+using std::get;
+using std::visit;
 
 struct test_1
 {

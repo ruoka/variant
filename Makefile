@@ -9,10 +9,10 @@ UNITTESTS_SRC = $(call rwildcard,test/,*.cpp)
 
 UNITTESTS_BIN = $(patsubst %.cpp,%,$(UNITTESTS_SRC))
 
-$(UNITTESTS_BIN) : $(@:test/%=test/%.cpp) include/experimental/variant
+$(UNITTESTS_BIN) : $(@:test/%=test/%.cpp) include/variant
 	$(CXX) $(CXXFLAGS) $(@:test/%=test/%.cpp) -o $@
 
-example: example.cpp include/experimental/variant
+example: example.cpp include/variant
 	$(CXX) $(CXXFLAGS) example.cpp -o example
 
 .PHONY: all
