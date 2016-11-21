@@ -105,20 +105,21 @@ void test_get_if()
 
 void test_get_odds()
 {
-  auto vola0 = variant<bool,bool,int>{33};
-  assert(get<int>(vola0) == 33);
+  auto vola0 = variant<bool,bool,const int>{33};
+  assert(get<const int>(vola0) == 33);
   assert(get<2>(vola0) == 33);
 
   auto vola1 = variant<bool,bool,volatile int>{33};
-  // assert(get<volatile int>(vola1) == 33);
+  assert(get<volatile int>(vola1) == 33);
+  assert(get<2>(vola1) == 33);
 
-  variant<bool,const bool,const std::string> vola2{"Variant"};
-  // assert(get<const std::string>(vola2) == std::string{"Variant"});
-  // assert(get<2>(vola2) == std::string{"Variant"});
+  variant<bool,const bool,const std::string> vola2{std::string{"Variant"}};
+  assert(get<const std::string>(vola2) == std::string{"Variant"});
+  assert(get<2>(vola2) == std::string{"Variant"});
 
   auto vola3 = variant<bool,const bool,const volatile int>{static_cast<const volatile int>(44)};
-  // assert(get<const volatile int>(vola3) == 44);
-  // assert(get<2>(vola3) == 44);
+  assert(get<const volatile int>(vola3) == 44);
+  assert(get<2>(vola3) == 44);
 }
 
 int main()
