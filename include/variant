@@ -1231,6 +1231,7 @@ class variant : public __variant_base<conjunction_v<is_copy_constructible<_Types
                                 conjunction_v<is_move_assignable<_Types>...>,
                                 conjunction_v<is_trivially_destructible<_Types>...>,
                                 _Types...>;
+
   using __base::__copy;
   using __base::__move;
   using __base::__construct;
@@ -1556,6 +1557,14 @@ public:
       __swap[__lhs.__m_index](__lhs,__tmp);
     }
   }
+};
+
+template<>
+class variant<>
+{
+  variant() = delete;
+  variant(const variant&) = delete;
+  variant(variant&&) = delete;
 };
 
 // 20.7.11, hash support

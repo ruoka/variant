@@ -2,6 +2,7 @@
 
 #include <variant>
 #include <string>
+#include <vector>
 #include <cassert>
 
 using std::variant;
@@ -94,9 +95,16 @@ void test_odds()
   assert(get<0>(vola) == 33);
 }
 
+void test_void_and_empty()
+{
+  variant<int, void> v1;
+  static_assert(!std::is_default_constructible_v<variant<>>);
+}
+
 int main()
 {
   test_type_traits();
   test_constructors();
   test_odds();
+  test_void_and_empty();
 }
