@@ -1239,15 +1239,15 @@ void swap(variant<_Types...>& __lhs, variant<_Types...>& __rhs)
 template <class... _Types>
 class variant : public __variant_base<conjunction_v<is_copy_constructible<_Types>...>,
                                       conjunction_v<is_move_constructible<_Types>...>,
-                                      conjunction_v<is_copy_assignable<_Types>...>,
-                                      conjunction_v<is_move_assignable<_Types>...>,
+                                      conjunction_v<is_copy_assignable<_Types>..., is_copy_constructible<_Types>...>,
+                                      conjunction_v<is_move_assignable<_Types>..., is_move_constructible<_Types>...>,
                                       conjunction_v<is_trivially_destructible<_Types>...>,
                                       _Types...>
 {
   using __base = __variant_base<conjunction_v<is_copy_constructible<_Types>...>,
                                 conjunction_v<is_move_constructible<_Types>...>,
-                                conjunction_v<is_copy_assignable<_Types>...>,
-                                conjunction_v<is_move_assignable<_Types>...>,
+                                conjunction_v<is_copy_assignable<_Types>..., is_copy_constructible<_Types>...>,
+                                conjunction_v<is_move_assignable<_Types>..., is_move_constructible<_Types>...>,
                                 conjunction_v<is_trivially_destructible<_Types>...>,
                                 _Types...>;
   using __base::__copy;

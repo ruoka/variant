@@ -17,6 +17,7 @@ using std::variant;
 
 struct foo
 {
+  foo(foo&&) = default;  
   foo& operator = (foo&&) = default;
 };
 
