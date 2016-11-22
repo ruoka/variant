@@ -11,8 +11,7 @@
 // UNSUPPORTED: c++98, c++03, c++11, c++14
 
 #include <variant>
-#include <string>
-#include <vector>
+#include <cassert>
 
 using std::variant;
 using std::monostate;
