@@ -646,7 +646,8 @@ protected:
 
   void __copy(const __variant_base& __v)
   {
-    assert(__v.__m_index != variant_npos && __v.__m_index < sizeof...(_Types));
+    assert(__v.__m_index != variant_npos);
+    assert(__v.__m_index < sizeof...(_Types));
     assert(__m_index == variant_npos);
     using __function = void(__variant_base::*)(const __variant_base&);
     constexpr __function __array[sizeof...(_Types)] = {&__variant_base::__private_copy<_Types>...};
