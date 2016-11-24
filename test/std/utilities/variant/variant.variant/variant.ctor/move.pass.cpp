@@ -47,6 +47,13 @@ void test_type_traits()
   static_assert(!std::is_move_constructible_v<variant<int,bool,bar,double>>);
 }
 
+void test_constexpr()
+{
+  constexpr variant<int,bool,double,foo> v{variant<int,bool,double,foo>{1.1}};
+  static_assert(v.index() == 2);
+  static_assert(holds_alternative<double>(v));
+}
+
 void test_constructors()
 {
   auto v1 = variant<int,bool,double,std::string>{2.2};
@@ -67,5 +74,6 @@ void test_constructors()
 int main()
 {
   test_type_traits();
+  test_constexpr();
   test_constructors();
 }

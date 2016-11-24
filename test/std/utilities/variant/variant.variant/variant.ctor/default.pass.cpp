@@ -55,48 +55,48 @@ void test_constructors()
 
 void test_odds()
 {
-  // auto i = 13;
-  // variant<bool*,int&,double*,std::string&> odd1{i};
-  // assert(holds_alternative<int&>(odd1));
-  // assert(!holds_alternative<const std::string&>(odd1));
-  // assert(!holds_alternative<const std::string>(odd1));
-  // assert(!holds_alternative<std::string>(odd1));
-  // assert(!holds_alternative<std::string&>(odd1));
-  // assert(!holds_alternative<std::nullptr_t>(odd1));
-  // assert(odd1.index() == 1);
-  // assert(get<1>(odd1) == i);
-  //
-  // const auto str = std::string{"Jee!"};
-  // variant<bool*,int&,double*,const std::string&> odd2{str};
-  // assert(holds_alternative<const std::string&>(odd2));
-  // assert(!holds_alternative<const std::string>(odd2));
-  // assert(!holds_alternative<std::string>(odd2));
-  // assert(!holds_alternative<std::string&>(odd2));
-  // assert(!holds_alternative<int&>(odd2));
-  // assert(odd2.index() == 3);
-  // assert(get<3>(odd2) == str);
-  //
-  // auto b = false;
-  // variant<bool*,int&,double*,const std::string&> odd3{&b};
-  // assert(holds_alternative<bool*>(odd3));
-  // assert(!holds_alternative<int&>(odd3));
-  // assert(!holds_alternative<unsigned>(odd3));
-  // assert(odd3.index() == 0);
-  // assert(*get<0>(odd3) == b);
-  //
-  // variant<const volatile int> vola{33};
-  // assert(holds_alternative<const volatile int>(vola));
-  // assert(!holds_alternative<volatile int>(vola));
-  // assert(!holds_alternative<int>(vola));
-  // assert(!holds_alternative<const int>(vola));
-  // assert(!holds_alternative<bool>(vola));
-  // assert(vola.index() == 0);
-  // assert(get<0>(vola) == 33);
+  auto i = 13;
+  variant<bool*,int&,double*,std::string&> odd1{i};
+  assert(holds_alternative<int&>(odd1));
+  assert(!holds_alternative<const std::string&>(odd1));
+  assert(!holds_alternative<const std::string>(odd1));
+  assert(!holds_alternative<std::string>(odd1));
+  assert(!holds_alternative<std::string&>(odd1));
+  assert(!holds_alternative<std::nullptr_t>(odd1));
+  assert(odd1.index() == 1);
+  assert(get<1>(odd1) == i);
+
+  const auto str = std::string{"Jee!"};
+  variant<bool*,int&,double*,const std::string&> odd2{str};
+  assert(holds_alternative<const std::string&>(odd2));
+  assert(!holds_alternative<const std::string>(odd2));
+  assert(!holds_alternative<std::string>(odd2));
+  assert(!holds_alternative<std::string&>(odd2));
+  assert(!holds_alternative<int&>(odd2));
+  assert(odd2.index() == 3);
+  assert(get<3>(odd2) == str);
+
+  auto b = false;
+  variant<bool*,int&,double*,const std::string&> odd3{&b};
+  assert(holds_alternative<bool*>(odd3));
+  assert(!holds_alternative<int&>(odd3));
+  assert(!holds_alternative<unsigned>(odd3));
+  assert(odd3.index() == 0);
+  assert(*get<0>(odd3) == b);
+
+  variant<const volatile int> vola{33};
+  assert(holds_alternative<const volatile int>(vola));
+  assert(!holds_alternative<volatile int>(vola));
+  assert(!holds_alternative<int>(vola));
+  assert(!holds_alternative<const int>(vola));
+  assert(!holds_alternative<bool>(vola));
+  assert(vola.index() == 0);
+  assert(get<0>(vola) == 33);
 }
 
 void test_void_and_empty()
 {
-  // variant<void,int> v1;
+  variant<int,void> v1;
   // variant<> v2;
 }
 
