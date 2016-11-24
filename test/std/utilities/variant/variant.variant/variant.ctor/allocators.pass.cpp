@@ -3,6 +3,7 @@
 #include <variant>
 #include <vector>
 #include <string>
+#include <tuple>
 #include <cassert>
 
 using std::variant;
@@ -41,52 +42,52 @@ void test_constructors_1()
   using variant = variant<bool,long,double,std::vector<int>,std::string>;
   std::allocator<char> a;
 
-  variant v1{std::allocator_arg_t{}, a};
+  variant v1{std::allocator_arg, a};
   assert(v1.index() == 0);
   assert(get<0>(v1) == false);
 
-  variant v2{std::allocator_arg_t{}, a, 1l};
+  variant v2{std::allocator_arg, a, 1l};
   assert(v2.index() == 1);
   assert(get<1>(v2) == 1);
 
-  variant v3{std::allocator_arg_t{}, a, 2.2};
+  variant v3{std::allocator_arg, a, 2.2};
   assert(v3.index() == 2);
   assert(get<2>(v3) == 2.2);
 
-  variant v4{std::allocator_arg_t{}, a, std::in_place_type<std::vector<int>>, {1,2,3,4,5,6,7}};
+  variant v4{std::allocator_arg, a, std::in_place_type<std::vector<int>>, {1,2,3,4,5,6,7}};
   assert(v4.index() == 3);
   assert(get<3>(v4).size() == 7);
   assert(get<3>(v4)[3] == 4);
 
-  variant v5{std::allocator_arg_t{}, a, std::in_place_index<3>, {1,2,3,4,5,6,7,8}};
+  variant v5{std::allocator_arg, a, std::in_place_index<3>, {1,2,3,4,5,6,7,8}};
   assert(v5.index() == 3);
   assert(get<3>(v5).size() == 8);
 
-  variant v6{std::allocator_arg_t{}, a, std::in_place_type<std::string>, "foo"};
+  variant v6{std::allocator_arg, a, std::in_place_type<std::string>, "foo"};
   assert(v6.index() == 4);
   assert(get<4>(v6) == "foo");
 
-  variant v7{std::allocator_arg_t{}, a, std::in_place_index<4>, "bar"};
+  variant v7{std::allocator_arg, a, std::in_place_index<4>, "bar"};
   assert(v7.index() == 4);
   assert(get<4>(v7) == "bar");
 
-  variant v8{std::allocator_arg_t{}, a, std::in_place_type<std::string>, {'a','b','c','d'}};
+  variant v8{std::allocator_arg, a, std::in_place_type<std::string>, {'a','b','c','d'}};
   assert(v8.index() == 4);
   assert(get<4>(v8) == "abcd");
 
-  variant v9{std::allocator_arg_t{}, a, std::in_place_index<4>, std::size_t{10}, 'a'};
+  variant v9{std::allocator_arg, a, std::in_place_index<4>, std::size_t{10}, 'a'};
   assert(v9.index() == 4);
   assert(get<4>(v9) == "aaaaaaaaaa");
 
-  variant v22{std::allocator_arg_t{}, a, v2};
+  variant v22{std::allocator_arg, a, v2};
   assert(v22.index() == 1);
   assert(get<1>(v22) == 1);
 
-  variant v23{std::allocator_arg_t{}, a, std::move(v3)};
+  variant v23{std::allocator_arg, a, std::move(v3)};
   assert(v23.index() == 2);
   assert(get<2>(v23) == 2.2);
 
-  variant v30{std::allocator_arg_t{}, a, std::string{"test"}};
+  variant v30{std::allocator_arg, a, std::string{"test"}};
   assert(v30.index() == 4);
   assert(get<4>(v30) == "test");
 }
@@ -96,17 +97,29 @@ void test_constructors_2()
   using variant = variant<long long,std::vector<int>,std::string>;
   std::allocator<char> a;
 
-  variant v31{std::allocator_arg_t{}, a, short{31}};
+  variant v31{std::allocator_arg, a, short{31}};
   assert(v31.index() == 0);
   assert(get<0>(v31) == 31);
 
-  variant v32{std::allocator_arg_t{}, a, int{32}};
+  variant v32{std::allocator_arg, a, int{32}};
   assert(v32.index() == 0);
   assert(get<0>(v32) == 32);
 
-  variant v33{std::allocator_arg_t{}, a, unsigned{33}};
+  variant v33{std::allocator_arg, a, unsigned{33}};
   assert(v33.index() == 0);
   assert(get<0>(v33) == 33);
+}
+
+void test_constructors_3()
+{
+  using variant = variant<std::tuple<int,std::vector<int>>,std::tuple<double,std::string>>;
+  std::allocator<char> a;
+
+  variant v31{std::allocator_arg, a, std::make_tuple(13,std::vector<int>{1,2,3})};
+  assert(v31.index() == 0);
+
+  variant v32{std::allocator_arg, a, std::make_tuple(12.34, std::string{"test"})};
+  assert(v32.index() == 1);
 }
 
 int main()
@@ -114,4 +127,5 @@ int main()
   test_type_traits();
   test_constructors_1();
   test_constructors_2();
+  test_constructors_3();
 }

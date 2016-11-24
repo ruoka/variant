@@ -4,10 +4,11 @@
 #include <cassert>
 
 using std::variant;
+using std::holds_alternative;
 
 struct foo
 {
-  foo(const foo&) noexcept = default;
+  constexpr foo(const foo&) noexcept = default;
 };
 
 struct foo2
@@ -21,7 +22,7 @@ struct bar
   bar(const bar&) = delete;
 };
 
-int main()
+void test_type_traits()
 {
   static_assert(std::is_nothrow_copy_constructible_v<variant<foo>>);
   static_assert(std::is_nothrow_copy_constructible_v<variant<int,bool,double,foo>>);
@@ -42,4 +43,20 @@ int main()
   static_assert(!std::is_copy_constructible_v<variant<int,bool,double,bar>>);
   static_assert(!std::is_copy_constructible_v<variant<bar,int,bool,double>>);
   static_assert(!std::is_copy_constructible_v<variant<int,bool,bar,double>>);
+}
+
+void test_constexpr()
+{
+  constexpr variant<int,bool,double,foo> v1{1.1};
+  constexpr variant<int,bool,double,foo> v2{v1};
+  static_assert(v1.index() == 2);
+  static_assert(v2.index() == 2);
+  static_assert(holds_alternative<double>(v1));
+  static_assert(holds_alternative<double>(v2));
+}
+
+int main()
+{
+  test_type_traits();
+  test_constexpr();
 }

@@ -12,7 +12,7 @@ int main()
 {
   variant<foo,double,char> v1, v2;
   v1 = 1.1;
-  v2 = 'A';
+  v2 = char{'A'};
   assert(get<1>(v1) == 1.1);
   assert(get<2>(v2) == 'A');
   v1.swap(v2);
