@@ -22,6 +22,37 @@ struct bar
   bar(bar&&) = delete;
 };
 
+static std::size_t s_count = 0;
+
+template<typename T>
+struct allocator_tester : std::allocator<T>
+{
+  allocator_tester() noexcept = default;
+
+  allocator_tester(const allocator_tester&) noexcept = default;
+
+  template <class U> allocator_tester(const allocator_tester<U>& other) :
+  std::allocator<T>{other}
+  {}
+
+  T* allocate(std::size_t n, const void * hint = nullptr)
+  {
+    s_count += n;
+    return std::allocator<T>::allocate(n);
+  }
+
+  void deallocate(T* p, std::size_t n)
+  {
+    // s_count -= n;
+    std::allocator<T>::deallocate(p,n);
+  }
+};
+
+using my_string = std::basic_string<char, std::char_traits<char>, allocator_tester<char>>;
+
+template<typename T>
+using my_vector = std::vector<T, allocator_tester<T>>;
+
 void test_type_traits()
 {
   // Default
@@ -39,8 +70,8 @@ void test_type_traits()
 
 void test_constructors_1()
 {
-  using variant = variant<bool,long,double,std::vector<int>,std::string>;
-  std::allocator<char> a;
+  using variant = variant<bool,long,double,my_vector<int>,my_string>;
+  allocator_tester<variant> a;
 
   variant v1{std::allocator_arg, a};
   assert(v1.index() == 0);
@@ -54,7 +85,9 @@ void test_constructors_1()
   assert(v3.index() == 2);
   assert(get<2>(v3) == 2.2);
 
-  variant v4{std::allocator_arg, a, std::in_place_type<std::vector<int>>, {1,2,3,4,5,6,7}};
+  auto tmp = s_count;
+
+  variant v4{std::allocator_arg, a, std::in_place_type<my_vector<int>>, {1,2,3,4,5,6,7}};
   assert(v4.index() == 3);
   assert(get<3>(v4).size() == 7);
   assert(get<3>(v4)[3] == 4);
@@ -63,7 +96,7 @@ void test_constructors_1()
   assert(v5.index() == 3);
   assert(get<3>(v5).size() == 8);
 
-  variant v6{std::allocator_arg, a, std::in_place_type<std::string>, "foo"};
+  variant v6{std::allocator_arg, a, std::in_place_type<my_string>, "foo"};
   assert(v6.index() == 4);
   assert(get<4>(v6) == "foo");
 
@@ -71,13 +104,13 @@ void test_constructors_1()
   assert(v7.index() == 4);
   assert(get<4>(v7) == "bar");
 
-  variant v8{std::allocator_arg, a, std::in_place_type<std::string>, {'a','b','c','d'}};
+  variant v8{std::allocator_arg, a, std::in_place_type<my_string>, {'a','b','c','d'}};
   assert(v8.index() == 4);
   assert(get<4>(v8) == "abcd");
 
-  variant v9{std::allocator_arg, a, std::in_place_index<4>, std::size_t{10}, 'a'};
+  variant v9{std::allocator_arg, a, std::in_place_index<4>, std::size_t{1000000}, char{'a'}};
   assert(v9.index() == 4);
-  assert(get<4>(v9) == "aaaaaaaaaa");
+  // assert(get<4>(v9) == "aaaaaaaaaa");
 
   variant v22{std::allocator_arg, a, v2};
   assert(v22.index() == 1);
@@ -87,39 +120,50 @@ void test_constructors_1()
   assert(v23.index() == 2);
   assert(get<2>(v23) == 2.2);
 
-  variant v30{std::allocator_arg, a, std::string{"test"}};
+  variant v30{std::allocator_arg, a, my_string{"test"}};
   assert(v30.index() == 4);
   assert(get<4>(v30) == "test");
+
+  assert(s_count != 0);
+  assert(tmp < s_count);
 }
 
 void test_constructors_2()
 {
-  using variant = variant<long long,std::vector<int>,std::string>;
-  std::allocator<char> a;
+  using variant = variant<long long,my_vector<int>,my_string>;
+  allocator_tester<variant> a;
 
-  variant v31{std::allocator_arg, a, short{31}};
-  assert(v31.index() == 0);
-  assert(get<0>(v31) == 31);
+  auto tmp = s_count;
 
-  variant v32{std::allocator_arg, a, int{32}};
-  assert(v32.index() == 0);
-  assert(get<0>(v32) == 32);
+  variant v21{std::allocator_arg, a, short{21}};
+  assert(v21.index() == 0);
+  assert(get<0>(v21) == 21);
 
-  variant v33{std::allocator_arg, a, unsigned{33}};
-  assert(v33.index() == 0);
-  assert(get<0>(v33) == 33);
+  variant v22{std::allocator_arg, a, my_string(size_t{10000},char{'X'})};
+  assert(v22.index() == 2);
+  assert(get<2>(v22) == my_string(size_t{10000},char{'X'}));
+
+  variant v23{std::allocator_arg, a, unsigned{23}};
+  assert(v23.index() == 0);
+  assert(get<0>(v23) == 23u);
+
+  assert(tmp < s_count);
 }
 
 void test_constructors_3()
 {
-  using variant = variant<std::tuple<int,std::vector<int>>,std::tuple<double,std::string>>;
-  std::allocator<char> a;
+  using variant = variant<std::tuple<int,my_vector<int>>,std::tuple<double,my_string>>;
+  allocator_tester<variant> a;
 
-  variant v31{std::allocator_arg, a, std::make_tuple(13,std::vector<int>{1,2,3})};
+  auto tmp = s_count;
+
+  variant v31{std::allocator_arg, a, std::make_tuple(13,my_vector<int>{1,2,3})};
   assert(v31.index() == 0);
 
-  variant v32{std::allocator_arg, a, std::make_tuple(12.34, std::string{"test"})};
+  variant v32{std::allocator_arg, a, std::make_tuple(12.34, my_string{"test"})};
   assert(v32.index() == 1);
+
+  assert(tmp < s_count);
 }
 
 int main()

@@ -5,6 +5,7 @@
 
 using std::variant;
 using std::holds_alternative;
+using std::get;
 
 struct foo
 {
@@ -53,6 +54,9 @@ void test_constexpr()
   static_assert(v2.index() == 2);
   static_assert(holds_alternative<double>(v1));
   static_assert(holds_alternative<double>(v2));
+  static_assert(get<double>(v1) == get<double>(v2));
+  static_assert(get<double>(v1) == 1.1);
+  static_assert(get<double>(v2) == 1.1);
 }
 
 int main()
