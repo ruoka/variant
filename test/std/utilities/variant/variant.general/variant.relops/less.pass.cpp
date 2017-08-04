@@ -5,7 +5,7 @@
 
 using std::variant;
 
-void test_compile_less()
+void test_compile_time_less()
 {
   using test = variant<bool,int,double,std::nullptr_t>;
   constexpr test t1{1};
@@ -18,5 +18,5 @@ void test_compile_less()
 
 int main()
 {
-  test_compile_less();
+  test_compile_time_less();
 }
