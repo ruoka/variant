@@ -1,6 +1,6 @@
-CXX = /usr/local/bin/clang
+CXX = clang
 
-CXXFLAGS = -std=c++1z -lc++ -lSystem -L/usr/local/lib -L/usr/lib -Iinclude -ferror-limit=1
+CXXFLAGS = -std=c++17 -lc++ -lSystem -Iinclude -ferror-limit=1
 
 # Make does not offer a recursive wildcard function, so here's one:
 rwildcard = $(wildcard $1$2)$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
